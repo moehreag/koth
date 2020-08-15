@@ -255,7 +255,7 @@ public class KothActive {
                     winner = entry;
                 }
             } else {
-                if (winner == null || winner.getValue().score > entry.getValue().score) {
+                if (winner == null || winner.getValue().score < entry.getValue().score) {
                     winner = entry;
                 }
             }
