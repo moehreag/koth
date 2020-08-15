@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "koth",
+  "version": "${version}",
+  "name": "King of the Hill",
+  "description": "Knock your opponents off to become the King of the Hill",
+  "authors": [
+    "Restioson"
+  ],
+  "license": "LGPLv3",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.restioson.koth.Koth"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.9.1",
+    "fabric": "*",
+    "minecraft": "1.16.2",
+    "plasmid": "0.2.x"
+  }
+}
