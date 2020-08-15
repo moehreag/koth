@@ -7,6 +7,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.util.BlockBounds;
@@ -22,6 +23,8 @@ public class KothSpawnLogic {
 
     public void resetPlayer(ServerPlayerEntity player, GameMode gameMode) {
         player.setGameMode(gameMode);
+        player.setVelocity(Vec3d.ZERO);
+        player.fallDistance = 0.0f;
 
         player.addStatusEffect(new StatusEffectInstance(
                 StatusEffects.NIGHT_VISION,
@@ -41,7 +44,7 @@ public class KothSpawnLogic {
 
         double x = MathHelper.nextDouble(player.getRandom(), min.getX(), max.getX());
         double z = MathHelper.nextDouble(player.getRandom(), min.getZ(), max.getZ());
-        double y = min.getY() + 1;
+        double y = min.getY() + 0.5;
 
         player.teleport(world, x, y, z, this.map.spawnAngle, 0.0F);
     }

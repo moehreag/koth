@@ -50,9 +50,9 @@ public class KothActive {
         gameWorld.openGame(builder -> {
             builder.setRule(GameRule.CRAFTING, RuleResult.DENY);
             builder.setRule(GameRule.PORTALS, RuleResult.DENY);
-            builder.setRule(GameRule.PVP, RuleResult.DENY);
+            builder.setRule(GameRule.PVP, RuleResult.ALLOW);
             builder.setRule(GameRule.HUNGER, RuleResult.DENY);
-            builder.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
+            builder.setRule(GameRule.FALL_DAMAGE, RuleResult.ALLOW);
             builder.setRule(GameRule.INTERACTION, RuleResult.DENY);
             builder.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
             builder.setRule(GameRule.THROW_ITEMS, RuleResult.DENY);

@@ -4,16 +4,14 @@ import io.github.restioson.koth.game.map.KothMap;
 import io.github.restioson.koth.game.map.KothMapBuilder;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.ActionResult;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameOpenContext;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.game.StartResult;
 import xyz.nucleoid.plasmid.game.config.PlayerConfig;
-import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
-import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
-import xyz.nucleoid.plasmid.game.event.RequestStartListener;
+import xyz.nucleoid.plasmid.game.event.*;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
@@ -56,10 +54,20 @@ public class KothWaiting {
                 builder.on(RequestStartListener.EVENT, waiting::requestStart);
                 builder.on(OfferPlayerListener.EVENT, waiting::offerPlayer);
 
+                builder.on(GameTickListener.EVENT, waiting::tick);
+
                 builder.on(PlayerAddListener.EVENT, waiting::addPlayer);
                 builder.on(PlayerDeathListener.EVENT, waiting::onPlayerDeath);
             });
         });
+    }
+
+    private void tick() {
+        for (ServerPlayerEntity player : this.gameWorld.getWorld().getPlayers()) {
+            if (!this.map.bounds.contains(player.getBlockPos())) {
+                this.spawnPlayer(player);
+            }
+        }
     }
 
     private JoinResult offerPlayer(ServerPlayerEntity player) {
@@ -86,6 +94,7 @@ public class KothWaiting {
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
+        player.setHealth(20.0f);
         this.spawnPlayer(player);
         return ActionResult.FAIL;
     }
