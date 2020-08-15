@@ -98,6 +98,9 @@ public class KothActive {
 
     private void onClose() {
         this.timerBar.close();
+        if (this.scoreboard != null) {
+             this.scoreboard.close();
+        }
     }
 
     private void addPlayer(ServerPlayerEntity player) {
