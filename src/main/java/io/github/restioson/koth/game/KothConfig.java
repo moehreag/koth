@@ -9,17 +9,20 @@ public class KothConfig {
     public static final Codec<KothConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             PlayerConfig.CODEC.fieldOf("players").forGetter(config -> config.playerConfig),
             MapConfig.CODEC.fieldOf("map").forGetter(config -> config.map),
-            Codec.INT.fieldOf("time_limit_secs").forGetter(config -> config.timeLimitSecs)
+            Codec.INT.fieldOf("time_limit_secs").forGetter(config -> config.timeLimitSecs),
+            Codec.BOOL.fieldOf("winner_takes_all").forGetter(config -> config.winnerTakesAll)
     ).apply(instance, KothConfig::new));
 
     public final PlayerConfig playerConfig;
     public final MapConfig map;
     public final int timeLimitSecs;
+    public final boolean winnerTakesAll;
 
-    public KothConfig(PlayerConfig players, MapConfig map, int timeLimitSecs) {
+    public KothConfig(PlayerConfig players, MapConfig map, int timeLimitSecs, boolean winnerTakesAll) {
         this.playerConfig = players;
         this.map = map;
         this.timeLimitSecs = timeLimitSecs;
+        this.winnerTakesAll = winnerTakesAll;
     }
 
     public static class MapConfig {

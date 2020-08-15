@@ -26,7 +26,9 @@ public class KothMapBuilder {
                 throw new GameOpenException(new LiteralText("no spawn defined"));
             }
 
-            KothMap map = new KothMap(template, spawn, this.config.spawnAngle);
+            BlockBounds throne = template.getFirstRegion("throne");
+
+            KothMap map = new KothMap(template, spawn, throne, this.config.spawnAngle);
             template.setBiome(BuiltinBiomes.PLAINS);
 
             return map;

@@ -5,9 +5,11 @@ import io.github.restioson.koth.game.map.KothMapBuilder;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameOpenContext;
+import xyz.nucleoid.plasmid.game.GameOpenException;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.game.StartResult;
 import xyz.nucleoid.plasmid.game.config.PlayerConfig;
@@ -33,9 +35,14 @@ public class KothWaiting {
     }
 
     public static CompletableFuture<Void> open(GameOpenContext<KothConfig> context) {
+        KothConfig config = context.getConfig();
         KothMapBuilder generator = new KothMapBuilder(context.getConfig().map);
 
         return generator.create().thenAccept(map -> {
+            if (!config.winnerTakesAll && map.throne == null) {
+                throw new GameOpenException(new LiteralText("throne must exist if winner doesn't take all"));
+            }
+
             BubbleWorldConfig worldConfig = new BubbleWorldConfig()
                     .setGenerator(map.asGenerator(context.getServer()))
                     .setDefaultGameMode(GameMode.SPECTATOR);

@@ -9,7 +9,6 @@ import org.apache.logging.log4j.Logger;
 import xyz.nucleoid.plasmid.game.GameType;
 
 public class Koth implements ModInitializer {
-
     public static final String ID = "koth";
     public static final Logger LOGGER = LogManager.getLogger(ID);
 

@@ -15,11 +15,10 @@ public class KothIdle {
     public long finishTime = -1;
     private long startTime = -1;
     private final Object2ObjectMap<ServerPlayerEntity, FrozenPlayer> frozen;
-    private boolean setSpectator = false;
+    private SpectatorSetState spectatorSetState = SpectatorSetState.BEFORE_WIN_CALCULATION;
 
     public KothIdle() {
         this.frozen = new Object2ObjectOpenHashMap<>();
-        this.frozen.defaultReturnValue(new FrozenPlayer());
     }
 
     public void onOpen(long time, KothConfig config) {
@@ -44,8 +43,10 @@ public class KothIdle {
 
         // Game has just finished. Transition to the waiting-before-close state.
         if (time > this.finishTime || world.getPlayers().isEmpty()) {
-            if (!this.setSpectator) {
-                this.setSpectator = true;
+            if (this.spectatorSetState == SpectatorSetState.BEFORE_WIN_CALCULATION) {
+                this.spectatorSetState = SpectatorSetState.NOT_YET_SET; // Give time to calculate win result
+            } else if (this.spectatorSetState == SpectatorSetState.NOT_YET_SET) {
+                this.spectatorSetState = SpectatorSetState.SET;
                 for (ServerPlayerEntity player : world.getPlayers()) {
                     player.setGameMode(GameMode.SPECTATOR);
                 }
@@ -68,7 +69,7 @@ public class KothIdle {
                     continue;
                 }
 
-                FrozenPlayer state = this.frozen.get(player);
+                FrozenPlayer state = this.frozen.getOrDefault(player, new FrozenPlayer());
 
                 if (state.lastPos == null) {
                     state.lastPos = player.getPos();
@@ -100,5 +101,11 @@ public class KothIdle {
         TICK_FINISHED,
         GAME_FINISHED,
         GAME_CLOSED,
+    }
+
+    private enum SpectatorSetState {
+        BEFORE_WIN_CALCULATION,
+        NOT_YET_SET,
+        SET,
     }
 }
