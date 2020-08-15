@@ -85,7 +85,7 @@ public class KothActive {
     }
 
     private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
-        return !this.gameMap.noPvp.contains(player.getBlockPos());
+        return this.gameMap.noPvp.contains(player.getBlockPos());
     }
 
     private void onOpen() {
