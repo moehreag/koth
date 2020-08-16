@@ -170,7 +170,7 @@ public class KothActive {
 
             if (player.isSpectator()) {
                 this.tickDead(player, state, time);
-                return;
+                continue;
             }
 
             // If winnerTakesAll is true then throne must not be null
