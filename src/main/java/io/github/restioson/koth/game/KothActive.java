@@ -85,7 +85,7 @@ public class KothActive {
     }
 
     private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
-        return !this.gameMap.noPvp.contains(player.getBlockPos());
+        return this.gameMap.noPvp.contains(player.getBlockPos());
     }
 
     private void onOpen() {
@@ -98,6 +98,9 @@ public class KothActive {
 
     private void onClose() {
         this.timerBar.close();
+        if (this.scoreboard != null) {
+             this.scoreboard.close();
+        }
     }
 
     private void addPlayer(ServerPlayerEntity player) {
@@ -255,7 +258,7 @@ public class KothActive {
                     winner = entry;
                 }
             } else {
-                if (winner == null || winner.getValue().score > entry.getValue().score) {
+                if (winner == null || winner.getValue().score < entry.getValue().score) {
                     winner = entry;
                 }
             }
