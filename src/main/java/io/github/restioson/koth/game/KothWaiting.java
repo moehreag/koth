@@ -4,8 +4,11 @@ import io.github.restioson.koth.game.map.KothMap;
 import io.github.restioson.koth.game.map.KothMapBuilder;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameOpenContext;
 import xyz.nucleoid.plasmid.game.GameOpenException;
@@ -109,6 +112,25 @@ public class KothWaiting {
     }
 
     private void spawnPlayer(ServerPlayerEntity player) {
+        String line2;
+
+        if (this.config.winnerTakesAll) {
+            line2 = "Score points by staying on top of the hill. Whoever reigns longest wins!";
+        } else {
+            line2 = "Whoever is highest when the game ends wins!";
+        }
+
+        String[] lines = new String[] {
+                "King of the Hill - get to the top of the hill and knock off others to win!",
+                line2
+        };
+
+        for (String line : lines) {
+            Text text = new LiteralText(line).formatted(Formatting.GOLD);
+            player.sendMessage(text, false);
+            player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+        }
+
         this.spawnLogic.resetPlayer(player, GameMode.ADVENTURE);
         this.spawnLogic.spawnPlayer(player);
     }
