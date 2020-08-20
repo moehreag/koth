@@ -4,7 +4,6 @@ import io.github.restioson.koth.game.map.KothMap;
 import io.github.restioson.koth.game.map.KothMapBuilder;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.world.GameMode;
@@ -17,7 +16,7 @@ import xyz.nucleoid.plasmid.game.event.*;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
-import xyz.nucleoid.plasmid.game.world.bubble.BubbleWorldConfig;
+import xyz.nucleoid.plasmid.world.bubble.BubbleWorldConfig;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -34,11 +33,11 @@ public class KothWaiting {
         this.spawnLogic = new KothSpawnLogic(gameWorld, map);
     }
 
-    public static CompletableFuture<Void> open(GameOpenContext<KothConfig> context) {
+    public static CompletableFuture<GameWorld> open(GameOpenContext<KothConfig> context) {
         KothConfig config = context.getConfig();
         KothMapBuilder generator = new KothMapBuilder(context.getConfig().map);
 
-        return generator.create().thenAccept(map -> {
+        return generator.create().thenCompose(map -> {
             if (!config.winnerTakesAll && map.throne == null) {
                 throw new GameOpenException(new LiteralText("throne must exist if winner doesn't take all"));
             }
@@ -47,24 +46,27 @@ public class KothWaiting {
                     .setGenerator(map.asGenerator(context.getServer()))
                     .setDefaultGameMode(GameMode.SPECTATOR);
 
-            GameWorld gameWorld = context.openWorld(worldConfig);
-            KothWaiting waiting = new KothWaiting(gameWorld, map, context.getConfig());
+            return context.openWorld(worldConfig).thenApply(gameWorld -> {
+                KothWaiting waiting = new KothWaiting(gameWorld, map, context.getConfig());
 
-            gameWorld.openGame(builder -> {
-                builder.setRule(GameRule.CRAFTING, RuleResult.DENY);
-                builder.setRule(GameRule.PORTALS, RuleResult.DENY);
-                builder.setRule(GameRule.PVP, RuleResult.DENY);
-                builder.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
-                builder.setRule(GameRule.HUNGER, RuleResult.DENY);
-                builder.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
+                gameWorld.openGame(builder -> {
+                    builder.setRule(GameRule.CRAFTING, RuleResult.DENY);
+                    builder.setRule(GameRule.PORTALS, RuleResult.DENY);
+                    builder.setRule(GameRule.PVP, RuleResult.DENY);
+                    builder.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
+                    builder.setRule(GameRule.HUNGER, RuleResult.DENY);
+                    builder.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
 
-                builder.on(RequestStartListener.EVENT, waiting::requestStart);
-                builder.on(OfferPlayerListener.EVENT, waiting::offerPlayer);
+                    builder.on(RequestStartListener.EVENT, waiting::requestStart);
+                    builder.on(OfferPlayerListener.EVENT, waiting::offerPlayer);
 
-                builder.on(GameTickListener.EVENT, waiting::tick);
+                    builder.on(GameTickListener.EVENT, waiting::tick);
 
-                builder.on(PlayerAddListener.EVENT, waiting::addPlayer);
-                builder.on(PlayerDeathListener.EVENT, waiting::onPlayerDeath);
+                    builder.on(PlayerAddListener.EVENT, waiting::addPlayer);
+                    builder.on(PlayerDeathListener.EVENT, waiting::onPlayerDeath);
+                });
+
+                return gameWorld;
             });
         });
     }
@@ -88,12 +90,12 @@ public class KothWaiting {
     private StartResult requestStart() {
         PlayerConfig playerConfig = this.config.playerConfig;
         if (this.gameWorld.getPlayerCount() < playerConfig.getMinPlayers()) {
-            return StartResult.notEnoughPlayers();
+            return StartResult.NOT_ENOUGH_PLAYERS;
         }
 
         KothActive.open(this.gameWorld, this.map, this.config);
 
-        return StartResult.ok();
+        return StartResult.OK;
     }
 
     private void addPlayer(ServerPlayerEntity player) {

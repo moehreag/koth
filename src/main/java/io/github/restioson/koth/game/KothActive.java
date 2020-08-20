@@ -34,7 +34,7 @@ public class KothActive {
     private final KothSpawnLogic spawnLogic;
     private final KothIdle idle;
     private final KothTimerBar timerBar;
-    private KothScoreboard scoreboard = null;
+    private final KothScoreboard scoreboard;
 
     private KothActive(GameWorld gameWorld, KothMap map, KothConfig config, Set<ServerPlayerEntity> participants) {
         this.gameWorld = gameWorld;
@@ -47,9 +47,14 @@ public class KothActive {
             this.participants.put(player, new KothPlayer(player));
         }
 
-        if (!config.winnerTakesAll) {
-            this.scoreboard = new KothScoreboard(gameWorld.getWorld().getScoreboard());
+        String name;
+        if (config.winnerTakesAll) {
+            name = "Winner Takes All";
+        } else {
+            name = "Longest-reigning King";
         }
+
+        this.scoreboard = new KothScoreboard(gameWorld, name);
 
         this.idle = new KothIdle();
         this.timerBar = new KothTimerBar();
@@ -94,6 +99,7 @@ public class KothActive {
             this.spawnParticipant(player);
         }
         this.idle.onOpen(world.getTime(), this.config);
+        this.scoreboard.renderTitle();
     }
 
     private void onClose() {
@@ -176,11 +182,16 @@ public class KothActive {
                 continue;
             }
 
-            // If winnerTakesAll is true then throne must not be null
-            if (!this.config.winnerTakesAll
-                    && this.gameMap.throne.toBox().intersects(player.getBoundingBox())
-                    && time % 20 == 0
-            ) {
+            if (this.config.winnerTakesAll) {
+                List<KothPlayer> top = this.participants.values().stream()
+                        .sorted(Comparator.comparingDouble(p -> -p.player.getY())) // Descending sort
+                        .limit(1)
+                        .collect(Collectors.toList());
+                this.scoreboard.render(top);
+                continue;
+            }
+
+            if (this.gameMap.throne.toBox().intersects(player.getBoundingBox()) && time % 20 == 0) {
                 state.score += 1;
                 player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
                 player.addExperienceLevels(1);
@@ -203,6 +214,7 @@ public class KothActive {
     }
 
     private List<KothPlayer> buildLeaderboard() {
+        assert !this.config.winnerTakesAll;
         return this.participants.values().stream()
                 .filter(player -> player.score != 0)
                 .sorted(Comparator.comparingInt(player -> -player.score)) // Descending sort
@@ -216,14 +228,14 @@ public class KothActive {
         }
     }
 
-    protected static void broadcastSound(SoundEvent sound, float pitch, GameWorld world) {
+    protected static void broadcastYesSound(SoundEvent sound, float pitch, GameWorld world) {
         for (ServerPlayerEntity player : world.getPlayers()) {
             player.playSound(sound, SoundCategory.PLAYERS, 1.0F, pitch);
         }
     }
 
-    protected static void broadcastSound(SoundEvent sound,  GameWorld world) {
-        broadcastSound(sound, 1.0f, world);
+    protected static void broadcastYesSound(GameWorld world) {
+        broadcastYesSound(SoundEvents.ENTITY_VILLAGER_YES, 1.0f, world);
     }
 
     protected static void broadcastTitle(Text message, GameWorld world) {
@@ -238,11 +250,11 @@ public class KothActive {
         if (winner != null) {
              message = winner.getDisplayName().shallowCopy().append(" has won the game!").formatted(Formatting.GOLD);
         } else {
-            message = new LiteralText("The game ended, but nobody won!").formatted(Formatting.GOLD);;
+            message = new LiteralText("The game ended, but nobody won!").formatted(Formatting.GOLD);
         }
 
         broadcastMessage(message, this.gameWorld);
-        broadcastSound(SoundEvents.ENTITY_VILLAGER_YES, this.gameWorld);
+        broadcastYesSound(this.gameWorld);
     }
 
     private ServerPlayerEntity getWinner() {

@@ -42,7 +42,7 @@ public class KothIdle {
         }
 
         // Game has just finished. Transition to the waiting-before-close state.
-        if (time > this.finishTime || world.getPlayers().isEmpty()) {
+        if (time > this.finishTime || world.getPlayerCount() == 0) {
             if (this.spectatorSetState == SpectatorSetState.BEFORE_WIN_CALCULATION) {
                 this.spectatorSetState = SpectatorSetState.NOT_YET_SET; // Give time to calculate win result
             } else if (this.spectatorSetState == SpectatorSetState.NOT_YET_SET) {
@@ -84,10 +84,10 @@ public class KothIdle {
         if ((this.startTime - time) % 20 == 0) {
             if (sec > 0) {
                 KothActive.broadcastTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD), world);
-                KothActive.broadcastSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, 1.0F, world);
+                KothActive.broadcastYesSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, 1.0F, world);
             } else {
                 KothActive.broadcastTitle(new LiteralText("Go!").formatted(Formatting.BOLD), world);
-                KothActive.broadcastSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, 2.0F, world);
+                KothActive.broadcastYesSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, 2.0F, world);
             }
         }
     }
