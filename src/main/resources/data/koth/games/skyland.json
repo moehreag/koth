@@ -1,14 +1,14 @@
 {
   "type": "koth:koth",
   "map": {
-    "id": "koth:cotton_candy",
+    "id": "koth:skyland",
     "spawn_angle": 180
   },
-  "winner_takes_all": true,
+  "winner_takes_all": false,
   "players": {
     "min": 1,
     "max": 100
   },
   "time_limit_secs": 150,
-  "has_stick": false
+  "has_stick": true
 }

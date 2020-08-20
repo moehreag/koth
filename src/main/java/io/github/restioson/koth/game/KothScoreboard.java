@@ -4,6 +4,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.util.Formatting;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.widget.SidebarWidget;
+
 import java.util.ArrayList;
 import java.util.List;
 

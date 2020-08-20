@@ -3,7 +3,10 @@ package io.github.restioson.koth.game;
 import io.github.restioson.koth.game.map.KothMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -20,6 +23,7 @@ import xyz.nucleoid.plasmid.game.event.*;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
+import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -97,6 +101,14 @@ public class KothActive {
         ServerWorld world = this.gameWorld.getWorld();
         for (ServerPlayerEntity player : this.participants.keySet()) {
             this.spawnParticipant(player);
+
+            if (this.config.hasStick) {
+                ItemStack stick = ItemStackBuilder.of(Items.STICK)
+                        .addEnchantment(Enchantments.KNOCKBACK, 1)
+                        .addLore(new LiteralText("Ndiza kumbetha"))
+                        .build();
+                player.inventory.insertStack(stick);
+            }
         }
         this.idle.onOpen(world.getTime(), this.config);
         this.scoreboard.renderTitle();

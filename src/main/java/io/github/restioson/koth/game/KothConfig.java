@@ -10,19 +10,22 @@ public class KothConfig {
             PlayerConfig.CODEC.fieldOf("players").forGetter(config -> config.playerConfig),
             MapConfig.CODEC.fieldOf("map").forGetter(config -> config.map),
             Codec.INT.fieldOf("time_limit_secs").forGetter(config -> config.timeLimitSecs),
-            Codec.BOOL.fieldOf("winner_takes_all").forGetter(config -> config.winnerTakesAll)
+            Codec.BOOL.fieldOf("winner_takes_all").forGetter(config -> config.winnerTakesAll),
+            Codec.BOOL.fieldOf("has_stick").forGetter(config -> config.hasStick)
     ).apply(instance, KothConfig::new));
 
     public final PlayerConfig playerConfig;
     public final MapConfig map;
     public final int timeLimitSecs;
     public final boolean winnerTakesAll;
+    public final boolean hasStick;
 
-    public KothConfig(PlayerConfig players, MapConfig map, int timeLimitSecs, boolean winnerTakesAll) {
+    public KothConfig(PlayerConfig players, MapConfig map, int timeLimitSecs, boolean winnerTakesAll, boolean hasStick) {
         this.playerConfig = players;
         this.map = map;
         this.timeLimitSecs = timeLimitSecs;
         this.winnerTakesAll = winnerTakesAll;
+        this.hasStick = hasStick;
     }
 
     public static class MapConfig {
