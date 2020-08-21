@@ -7,15 +7,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.world.GameMode;
-import xyz.nucleoid.plasmid.game.GameOpenContext;
-import xyz.nucleoid.plasmid.game.GameOpenException;
-import xyz.nucleoid.plasmid.game.GameWorld;
-import xyz.nucleoid.plasmid.game.StartResult;
-import xyz.nucleoid.plasmid.game.config.PlayerConfig;
+import xyz.nucleoid.plasmid.game.*;
 import xyz.nucleoid.plasmid.game.event.*;
-import xyz.nucleoid.plasmid.game.player.JoinResult;
-import xyz.nucleoid.plasmid.game.rule.GameRule;
-import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.world.bubble.BubbleWorldConfig;
 
 import java.util.concurrent.CompletableFuture;
@@ -49,19 +42,9 @@ public class KothWaiting {
             return context.openWorld(worldConfig).thenApply(gameWorld -> {
                 KothWaiting waiting = new KothWaiting(gameWorld, map, context.getConfig());
 
-                gameWorld.openGame(builder -> {
-                    builder.setRule(GameRule.CRAFTING, RuleResult.DENY);
-                    builder.setRule(GameRule.PORTALS, RuleResult.DENY);
-                    builder.setRule(GameRule.PVP, RuleResult.DENY);
-                    builder.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
-                    builder.setRule(GameRule.HUNGER, RuleResult.DENY);
-                    builder.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
-
+                GameWaitingLobby.open(gameWorld, context.getConfig().playerConfig, builder -> {
                     builder.on(RequestStartListener.EVENT, waiting::requestStart);
-                    builder.on(OfferPlayerListener.EVENT, waiting::offerPlayer);
-
                     builder.on(GameTickListener.EVENT, waiting::tick);
-
                     builder.on(PlayerAddListener.EVENT, waiting::addPlayer);
                     builder.on(PlayerDeathListener.EVENT, waiting::onPlayerDeath);
                 });
@@ -79,22 +62,8 @@ public class KothWaiting {
         }
     }
 
-    private JoinResult offerPlayer(ServerPlayerEntity player) {
-        if (this.gameWorld.getPlayerCount() >= this.config.playerConfig.getMaxPlayers()) {
-            return JoinResult.gameFull();
-        }
-
-        return JoinResult.ok();
-    }
-
     private StartResult requestStart() {
-        PlayerConfig playerConfig = this.config.playerConfig;
-        if (this.gameWorld.getPlayerCount() < playerConfig.getMinPlayers()) {
-            return StartResult.NOT_ENOUGH_PLAYERS;
-        }
-
         KothActive.open(this.gameWorld, this.map, this.config);
-
         return StartResult.OK;
     }
 
