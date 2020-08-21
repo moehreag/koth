@@ -55,10 +55,10 @@ public class KothActive {
         if (config.winnerTakesAll) {
             name = "Winner Takes All";
         } else {
-            name = "Longest-reigning King";
+            name = "Longest-reigning Ruler";
         }
 
-        this.scoreboard = new KothScoreboard(gameWorld, name);
+        this.scoreboard = new KothScoreboard(gameWorld, name, this.config.winnerTakesAll);
 
         this.idle = new KothIdle();
         this.timerBar = new KothTimerBar();
@@ -104,13 +104,13 @@ public class KothActive {
 
             if (this.config.hasStick) {
                 ItemStack stick = ItemStackBuilder.of(Items.STICK)
-                        .addEnchantment(Enchantments.KNOCKBACK, 1)
+                        .addEnchantment(Enchantments.KNOCKBACK, 2)
                         .addLore(new LiteralText("Ndiza kumbetha"))
                         .build();
                 player.inventory.insertStack(stick);
             }
         }
-        this.idle.onOpen(world.getTime(), this.config);
+        this.idle.onOpen(world.getTime(), this.config, this.gameWorld);
         this.scoreboard.renderTitle();
     }
 

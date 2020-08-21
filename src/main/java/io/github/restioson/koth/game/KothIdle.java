@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
@@ -21,9 +22,29 @@ public class KothIdle {
         this.frozen = new Object2ObjectOpenHashMap<>();
     }
 
-    public void onOpen(long time, KothConfig config) {
+    public void onOpen(long time, KothConfig config, GameWorld world) {
         this.startTime = time - (time % 20) + (4 * 20) + 19;
         this.finishTime = this.startTime + (config.timeLimitSecs * 20);
+        String line2;
+
+        if (!config.winnerTakesAll) {
+            line2 = "Score points by staying on top of the hill. Whoever reigns longest wins!";
+        } else {
+            line2 = "Whoever is highest when the game ends wins!";
+        }
+
+        String[] lines = new String[] {
+                "King of the Hill - get to the top of the hill and knock off others to win!",
+                line2
+        };
+
+        for (ServerPlayerEntity player : world.getPlayers()) {
+            for (String line : lines) {
+                Text text = new LiteralText(line).formatted(Formatting.GOLD);
+                player.sendMessage(text, false);
+            }
+            player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+        }
     }
 
     public IdleTickResult tick(long time, GameWorld world) {
