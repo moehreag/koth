@@ -10,8 +10,9 @@ public class KothConfig {
             PlayerConfig.CODEC.fieldOf("players").forGetter(config -> config.playerConfig),
             MapConfig.CODEC.fieldOf("map").forGetter(config -> config.map),
             Codec.INT.fieldOf("time_limit_secs").forGetter(config -> config.timeLimitSecs),
-            Codec.BOOL.fieldOf("winner_takes_all").forGetter(config -> config.winnerTakesAll),
-            Codec.BOOL.fieldOf("has_stick").forGetter(config -> config.hasStick)
+            Codec.BOOL.optionalFieldOf("winner_takes_all", false).forGetter(config -> config.winnerTakesAll),
+            Codec.BOOL.optionalFieldOf("has_stick", false).forGetter(config -> config.hasStick),
+            Codec.BOOL.optionalFieldOf("deathmatch", false).forGetter(config -> config.deathmatch)
     ).apply(instance, KothConfig::new));
 
     public final PlayerConfig playerConfig;
@@ -19,13 +20,15 @@ public class KothConfig {
     public final int timeLimitSecs;
     public final boolean winnerTakesAll;
     public final boolean hasStick;
+    public final boolean deathmatch;
 
-    public KothConfig(PlayerConfig players, MapConfig map, int timeLimitSecs, boolean winnerTakesAll, boolean hasStick) {
+    public KothConfig(PlayerConfig players, MapConfig map, int timeLimitSecs, boolean winnerTakesAll, boolean hasStick, boolean deathmatch) {
         this.playerConfig = players;
         this.map = map;
         this.timeLimitSecs = timeLimitSecs;
         this.winnerTakesAll = winnerTakesAll;
         this.hasStick = hasStick;
+        this.deathmatch = deathmatch;
     }
 
     public static class MapConfig {

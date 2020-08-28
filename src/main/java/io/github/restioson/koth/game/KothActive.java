@@ -11,7 +11,6 @@ import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -21,6 +20,7 @@ import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.game.event.*;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
+import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
@@ -52,7 +52,9 @@ public class KothActive {
         }
 
         String name;
-        if (config.winnerTakesAll) {
+        if (config.deathmatch) {
+            name = "Deathmatch!";
+        } else if (config.winnerTakesAll) {
             name = "Winner Takes All";
         } else {
             name = "Longest-reigning Ruler";
@@ -60,7 +62,7 @@ public class KothActive {
 
         this.scoreboard = new KothScoreboard(gameWorld, name, this.config.winnerTakesAll);
 
-        this.idle = new KothIdle();
+        this.idle = new KothIdle(config);
         this.timerBar = new KothTimerBar();
     }
 
@@ -141,7 +143,13 @@ public class KothActive {
     private void spawnDeadParticipant(ServerPlayerEntity player, long time) {
         this.spawnLogic.resetPlayer(player, GameMode.SPECTATOR);
         this.spawnLogic.spawnPlayer(player);
-        this.participants.get(player).deadTime = time;
+        if (this.config.deathmatch) {
+            PlayerSet players = this.gameWorld.getPlayerSet();
+            players.sendMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.GOLD));
+            players.sendSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP);
+        } else {
+            this.participants.get(player).deadTime = time;
+        }
     }
 
     private void spawnParticipant(ServerPlayerEntity player) {
@@ -186,28 +194,30 @@ public class KothActive {
                 }
             }
 
-            KothPlayer state = this.participants.get(player);
-            assert state != null;
+            if (!this.config.deathmatch) {
+                KothPlayer state = this.participants.get(player);
+                assert state != null;
 
-            if (player.isSpectator()) {
-                this.tickDead(player, state, time);
-                continue;
-            }
+                if (player.isSpectator()) {
+                    this.tickDead(player, state, time);
+                    continue;
+                }
 
-            if (this.config.winnerTakesAll) {
-                List<KothPlayer> top = this.participants.values().stream()
-                        .sorted(Comparator.comparingDouble(p -> -p.player.getY())) // Descending sort
-                        .limit(1)
-                        .collect(Collectors.toList());
-                this.scoreboard.render(top);
-                continue;
-            }
+                if (this.config.winnerTakesAll) {
+                    List<KothPlayer> top = this.participants.values().stream()
+                            .sorted(Comparator.comparingDouble(p -> -p.player.getY())) // Descending sort
+                            .limit(1)
+                            .collect(Collectors.toList());
+                    this.scoreboard.render(top);
+                    continue;
+                }
 
-            if (this.gameMap.throne.toBox().intersects(player.getBoundingBox()) && time % 20 == 0) {
-                state.score += 1;
-                player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
-                player.addExperienceLevels(1);
-                this.scoreboard.render(this.buildLeaderboard());
+                if (this.gameMap.throne.toBox().intersects(player.getBoundingBox()) && time % 20 == 0) {
+                    state.score += 1;
+                    player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
+                    player.addExperienceLevels(1);
+                    this.scoreboard.render(this.buildLeaderboard());
+                }
             }
         }
     }
@@ -234,21 +244,6 @@ public class KothActive {
                 .collect(Collectors.toList());
     }
 
-    protected static void broadcastMessage(Text message, GameWorld world) {
-        for (ServerPlayerEntity player : world.getPlayers()) {
-            player.sendMessage(message, false);
-        }
-    }
-
-    protected static void broadcastYesSound(SoundEvent sound, float pitch, GameWorld world) {
-        for (ServerPlayerEntity player : world.getPlayers()) {
-            player.playSound(sound, SoundCategory.PLAYERS, 1.0F, pitch);
-        }
-    }
-
-    protected static void broadcastYesSound(GameWorld world) {
-        broadcastYesSound(SoundEvents.ENTITY_VILLAGER_YES, 1.0f, world);
-    }
 
     protected static void broadcastTitle(Text message, GameWorld world) {
         for (ServerPlayerEntity player : world.getPlayers()) {
@@ -265,13 +260,27 @@ public class KothActive {
             message = new LiteralText("The game ended, but nobody won!").formatted(Formatting.GOLD);
         }
 
-        broadcastMessage(message, this.gameWorld);
-        broadcastYesSound(this.gameWorld);
+        PlayerSet players = this.gameWorld.getPlayerSet();
+        players.sendMessage(message);
+        players.sendSound(SoundEvents.ENTITY_VILLAGER_YES);
     }
 
     private ServerPlayerEntity getWinner() {
-        Map.Entry<ServerPlayerEntity, KothPlayer> winner = null;
+        if (this.config.deathmatch) {
+            ServerPlayerEntity winner = null;
+            for (ServerPlayerEntity player : this.participants.keySet()) {
+                if (!player.isSpectator()) {
+                    if (winner != null) {
+                        return null;
+                    }
+                    winner = player;
+                }
+            }
 
+            return winner;
+        }
+
+        Map.Entry<ServerPlayerEntity, KothPlayer> winner = null;
         for (Map.Entry<ServerPlayerEntity, KothPlayer> entry : this.participants.entrySet()) {
             if (this.config.winnerTakesAll) {
                 if (entry.getKey().isSpectator()) {

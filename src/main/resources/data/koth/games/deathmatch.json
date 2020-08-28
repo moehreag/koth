@@ -1,0 +1,15 @@
+{
+  "type": "koth:koth",
+  "map": {
+    "id": "koth:deathmatch",
+    "spawn_angle": 0
+  },
+  "winner_takes_all": false,
+  "deathmatch": true,
+  "players": {
+    "min": 1,
+    "max": 100
+  },
+  "time_limit_secs": 60,
+  "has_stick": true
+}

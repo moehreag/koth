@@ -3,6 +3,7 @@ package io.github.restioson.koth.game;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -12,13 +13,15 @@ import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameWorld;
 
 public class KothIdle {
+    private final KothConfig config;
     private long closeTime = -1;
     public long finishTime = -1;
     private long startTime = -1;
     private final Object2ObjectMap<ServerPlayerEntity, FrozenPlayer> frozen;
     private SpectatorSetState spectatorSetState = SpectatorSetState.BEFORE_WIN_CALCULATION;
 
-    public KothIdle() {
+    public KothIdle(KothConfig config) {
+        this.config = config;
         this.frozen = new Object2ObjectOpenHashMap<>();
     }
 
@@ -27,7 +30,9 @@ public class KothIdle {
         this.finishTime = this.startTime + (config.timeLimitSecs * 20);
         String line2;
 
-        if (!config.winnerTakesAll) {
+        if (config.deathmatch) {
+            line2 = "Deathmatch! Stay on the platform";
+        } else if (!config.winnerTakesAll) {
             line2 = "Score points by staying on top of the hill. Whoever reigns longest wins!";
         } else {
             line2 = "Whoever is highest when the game ends wins!";
@@ -62,8 +67,22 @@ public class KothIdle {
             return IdleTickResult.TICK_FINISHED;
         }
 
+        boolean noPlayers = world.getPlayerCount() == 0;
+        if (this.config.deathmatch) {
+            int remainingPlayers = 0;
+            for (ServerPlayerEntity player : world.getPlayerSet()) {
+                if (!player.isSpectator()) {
+                    remainingPlayers++;
+                }
+            }
+
+            if (remainingPlayers <= 1) {
+                noPlayers = true;
+            }
+        }
+
         // Game has just finished. Transition to the waiting-before-close state.
-        if (time > this.finishTime || world.getPlayerCount() == 0) {
+        if (time > this.finishTime || noPlayers) {
             if (this.spectatorSetState == SpectatorSetState.BEFORE_WIN_CALCULATION) {
                 this.spectatorSetState = SpectatorSetState.NOT_YET_SET; // Give time to calculate win result
             } else if (this.spectatorSetState == SpectatorSetState.NOT_YET_SET) {
@@ -105,10 +124,10 @@ public class KothIdle {
         if ((this.startTime - time) % 20 == 0) {
             if (sec > 0) {
                 KothActive.broadcastTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD), world);
-                KothActive.broadcastYesSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, 1.0F, world);
+                world.getPlayerSet().sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 1.0F);
             } else {
                 KothActive.broadcastTitle(new LiteralText("Go!").formatted(Formatting.BOLD), world);
-                KothActive.broadcastYesSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, 2.0F, world);
+                world.getPlayerSet().sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 2.0F, 1.0F);
             }
         }
     }
