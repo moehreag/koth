@@ -2,7 +2,7 @@
   "type": "koth:koth",
   "map": {
     "id": "koth:stack",
-    "spawn_angle": 180
+    "spawn_angle": 50
   },
   "winner_takes_all": false,
   "players": {
