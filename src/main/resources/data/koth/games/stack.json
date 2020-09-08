@@ -1,0 +1,14 @@
+{
+  "type": "koth:koth",
+  "map": {
+    "id": "koth:stack",
+    "spawn_angle": 50
+  },
+  "winner_takes_all": false,
+  "players": {
+    "min": 1,
+    "max": 100
+  },
+  "time_limit_secs": 150,
+  "has_stick": true
+}
