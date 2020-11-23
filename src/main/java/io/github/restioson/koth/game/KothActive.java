@@ -4,7 +4,10 @@ import io.github.restioson.koth.game.map.KothMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
@@ -76,7 +79,7 @@ public class KothActive {
             builder.setRule(GameRule.PVP, RuleResult.ALLOW);
             builder.setRule(GameRule.HUNGER, RuleResult.DENY);
             builder.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
-            builder.setRule(GameRule.INTERACTION, RuleResult.DENY);
+            builder.setRule(GameRule.INTERACTION, RuleResult.ALLOW);
             builder.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
             builder.setRule(GameRule.THROW_ITEMS, RuleResult.DENY);
             builder.setRule(GameRule.UNSTABLE_TNT, RuleResult.DENY);
@@ -99,6 +102,19 @@ public class KothActive {
         return this.gameMap.noPvp.contains(player.getBlockPos());
     }
 
+    private void maybeGiveBow(ServerPlayerEntity player) {
+        if (this.config.hasBow) {
+            ItemStack bow = ItemStackBuilder.of(Items.BOW)
+                    .addEnchantment(Enchantments.PUNCH, 2)
+                    .addEnchantment(Enchantments.INFINITY, 1)
+                    .setUnbreakable()
+                    .addLore(new LiteralText("Uzoba dutyulwa"))
+                    .build();
+
+            player.inventory.insertStack(bow);
+        }
+    }
+
     private void onOpen() {
         ServerWorld world = this.gameWorld.getWorld();
         for (ServerPlayerEntity player : this.participants.keySet()) {
@@ -110,6 +126,15 @@ public class KothActive {
                         .addLore(new LiteralText("Ndiza kumbetha"))
                         .build();
                 player.inventory.insertStack(stick);
+            }
+
+            if (this.config.hasBow) {
+                this.maybeGiveBow(player);
+                ItemStack arrow = ItemStackBuilder.of(Items.ARROW)
+                        .addLore(new LiteralText("It seems to always come back to me..."))
+                        .build();
+
+                player.inventory.insertStack(arrow);
             }
         }
         this.idle.onOpen(world.getTime(), this.config, this.gameWorld);
@@ -143,6 +168,9 @@ public class KothActive {
     private void spawnDeadParticipant(ServerPlayerEntity player, long time) {
         this.spawnLogic.resetPlayer(player, GameMode.SPECTATOR);
         this.spawnLogic.spawnPlayer(player);
+
+        Inventories.remove(player.inventory, it -> it.getItem() == Items.BOW, 1, false);
+
         if (this.config.deathmatch) {
             PlayerSet players = this.gameWorld.getPlayerSet();
             players.sendMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.GOLD));
@@ -165,6 +193,10 @@ public class KothActive {
     private void tick() {
         ServerWorld world = this.gameWorld.getWorld();
         long time = world.getTime();
+
+        for (ArrowEntity arrow : world.getEntitiesByType(EntityType.ARROW, this.gameMap.bounds.toBox(), e -> e.inGround)) {
+            arrow.remove();
+        }
 
         KothIdle.IdleTickResult result = this.idle.tick(time, gameWorld);
 
@@ -232,6 +264,7 @@ public class KothActive {
 
         if (time - state.deadTime > 5 * 20) {
             this.spawnParticipant(player);
+            this.maybeGiveBow(player);
         }
     }
 

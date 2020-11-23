@@ -127,7 +127,7 @@ public class KothIdle {
                 world.getPlayerSet().sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 1.0F);
             } else {
                 KothActive.broadcastTitle(new LiteralText("Go!").formatted(Formatting.BOLD), world);
-                world.getPlayerSet().sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 2.0F, 1.0F);
+                world.getPlayerSet().sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 2.0F);
             }
         }
     }

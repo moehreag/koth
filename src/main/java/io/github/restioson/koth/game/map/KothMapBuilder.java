@@ -3,7 +3,7 @@ package io.github.restioson.koth.game.map;
 import io.github.restioson.koth.Koth;
 import io.github.restioson.koth.game.KothConfig;
 import net.minecraft.text.LiteralText;
-import net.minecraft.world.biome.BuiltinBiomes;
+import net.minecraft.world.biome.BiomeKeys;
 import xyz.nucleoid.plasmid.game.GameOpenException;
 import xyz.nucleoid.plasmid.game.map.template.MapTemplateSerializer;
 import xyz.nucleoid.plasmid.util.BlockBounds;
@@ -29,7 +29,7 @@ public class KothMapBuilder {
             BlockBounds throne = template.getFirstRegion("throne");
 
             KothMap map = new KothMap(template, spawn, throne, this.config.spawnAngle);
-            template.setBiome(BuiltinBiomes.PLAINS);
+            template.setBiome(BiomeKeys.PLAINS);
 
             return map;
         });
