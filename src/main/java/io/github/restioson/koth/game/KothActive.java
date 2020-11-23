@@ -5,11 +5,14 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.player.ItemCooldownManager;
 import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -19,6 +22,10 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.game.event.*;
@@ -26,6 +33,7 @@ import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
+import xyz.nucleoid.plasmid.util.BlockBounds;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
 import java.util.*;
@@ -42,6 +50,8 @@ public class KothActive {
     private final KothIdle idle;
     private final KothTimerBar timerBar;
     private final KothScoreboard scoreboard;
+    private static final int LEAP_INTERVAL_TICKS = 5 * 20; // 5 second cooldown
+    private static final double LEAP_VELOCITY = 1.0;
 
     private KothActive(GameWorld gameWorld, KothMap map, KothConfig config, Set<ServerPlayerEntity> participants) {
         this.gameWorld = gameWorld;
@@ -92,6 +102,7 @@ public class KothActive {
             builder.on(PlayerRemoveListener.EVENT, active::removePlayer);
 
             builder.on(GameTickListener.EVENT, active::tick);
+            builder.on(UseItemListener.EVENT, active::onUseItem);
 
             builder.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
             builder.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
@@ -136,6 +147,18 @@ public class KothActive {
 
                 player.inventory.insertStack(arrow);
             }
+
+            if (this.config.hasFeather) {
+                ItemStack feather = ItemStackBuilder.of(Items.FEATHER)
+                        .addLore(new LiteralText("Bukelani, ndiyinkosi yesibhakabhaka!"))
+                        .build();
+
+                if (this.config.hasBow) {
+                    player.inventory.insertStack(feather);
+                } else {
+                    player.equipStack(EquipmentSlot.OFFHAND, feather);
+                }
+            }
         }
         this.idle.onOpen(world.getTime(), this.config, this.gameWorld);
         this.scoreboard.renderTitle();
@@ -163,6 +186,29 @@ public class KothActive {
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
         this.spawnParticipant(player);
         return ActionResult.FAIL;
+    }
+
+    private TypedActionResult<ItemStack> onUseItem(ServerPlayerEntity player, Hand hand) {
+        ItemStack heldStack = player.getStackInHand(hand);
+
+        if (heldStack.getItem() == Items.FEATHER) {
+            ItemCooldownManager cooldown = player.getItemCooldownManager();
+            if (!cooldown.isCoolingDown(heldStack.getItem())) {
+                KothPlayer state = this.participants.get(player);
+                if (state != null) {
+                    Vec3d rotationVec = player.getRotationVec(1.0F);
+                    player.setVelocity(rotationVec.multiply(LEAP_VELOCITY));
+                    Vec3d oldVel = player.getVelocity();
+                    player.setVelocity(oldVel.x, oldVel.y + 0.1f, oldVel.z);
+                    player.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(player));
+
+                    player.playSound(SoundEvents.ENTITY_HORSE_SADDLE, 1.0F, 1.0F);
+                    cooldown.set(heldStack.getItem(), LEAP_INTERVAL_TICKS);
+                }
+            }
+        }
+
+        return TypedActionResult.pass(ItemStack.EMPTY);
     }
 
     private void spawnDeadParticipant(ServerPlayerEntity player, long time) {
@@ -218,10 +264,18 @@ public class KothActive {
         for (ServerPlayerEntity player : this.participants.keySet()) {
             player.setHealth(20.0f);
 
-            if (!this.gameMap.bounds.contains(player.getBlockPos())) {
+            BlockBounds bounds = this.gameMap.bounds;
+            BlockPos pos = player.getBlockPos();
+            if (!bounds.contains(pos)) {
+                BlockPos max = this.gameMap.bounds.getMax();
+                BlockPos playerBoundedY = new BlockPos(pos.getX(), max.getY(), pos.getZ());
+
+                // Allow the player to jump above the bounds but not go out of its x and z bounds
+                boolean justAbove = player.getY() > max.getY() && bounds.contains(playerBoundedY);
+
                 if (player.isSpectator()) {
                     this.spawnLogic.spawnPlayer(player);
-                } else {
+                } else if (!justAbove) {
                     this.spawnDeadParticipant(player, time);
                 }
             }

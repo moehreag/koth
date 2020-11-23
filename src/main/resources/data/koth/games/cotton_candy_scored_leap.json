@@ -4,10 +4,11 @@
     "id": "koth:cotton_candy",
     "spawn_angle": 180
   },
-  "winner_takes_all": true,
+  "winner_takes_all": false,
   "players": {
     "min": 1,
     "max": 100
   },
-  "time_limit_secs": 150
+  "time_limit_secs": 150,
+  "has_feather": true
 }

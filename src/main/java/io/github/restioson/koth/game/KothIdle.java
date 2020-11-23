@@ -12,6 +12,10 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameWorld;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class KothIdle {
     private final KothConfig config;
     private long closeTime = -1;
@@ -38,16 +42,19 @@ public class KothIdle {
             line2 = "Whoever is highest when the game ends wins!";
         }
 
-        String[] lines = new String[] {
-                "King of the Hill - get to the top of the hill and knock off others to win!",
-                line2
-        };
+        List<String> lines = new ArrayList<>();
+        Collections.addAll(lines, "King of the Hill - get to the top of the hill and knock off others to win!", line2);
+
+        if (this.config.hasFeather) {
+            lines.add("Right-click with your feather to leap forwards.");
+        }
 
         for (ServerPlayerEntity player : world.getPlayers()) {
             for (String line : lines) {
                 Text text = new LiteralText(line).formatted(Formatting.GOLD);
                 player.sendMessage(text, false);
             }
+
             player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }
     }

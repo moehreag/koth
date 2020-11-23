@@ -13,6 +13,7 @@ public class KothConfig {
             Codec.BOOL.optionalFieldOf("winner_takes_all", false).forGetter(config -> config.winnerTakesAll),
             Codec.BOOL.optionalFieldOf("has_stick", false).forGetter(config -> config.hasStick),
             Codec.BOOL.optionalFieldOf("has_bow", false).forGetter(config -> config.hasStick),
+            Codec.BOOL.optionalFieldOf("has_feather", false).forGetter(config -> config.hasFeather),
             Codec.BOOL.optionalFieldOf("deathmatch", false).forGetter(config -> config.deathmatch)
     ).apply(instance, KothConfig::new));
 
@@ -22,15 +23,26 @@ public class KothConfig {
     public final boolean winnerTakesAll;
     public final boolean hasStick;
     public final boolean hasBow;
+    public final boolean hasFeather;
     public final boolean deathmatch;
 
-    public KothConfig(PlayerConfig players, MapConfig map, int timeLimitSecs, boolean winnerTakesAll, boolean hasStick, boolean hasBow, boolean deathmatch) {
+    public KothConfig(
+            PlayerConfig players,
+            MapConfig map,
+            int timeLimitSecs,
+            boolean winnerTakesAll,
+            boolean hasStick,
+            boolean hasBow,
+            boolean hasFeather,
+            boolean deathmatch
+    ) {
         this.playerConfig = players;
         this.map = map;
         this.timeLimitSecs = timeLimitSecs;
         this.winnerTakesAll = winnerTakesAll;
         this.hasStick = hasStick;
         this.hasBow = hasBow;
+        this.hasFeather = hasFeather;
         this.deathmatch = deathmatch;
     }
 
