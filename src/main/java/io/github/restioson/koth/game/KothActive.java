@@ -50,6 +50,7 @@ public class KothActive {
     private final KothIdle idle;
     private final KothTimerBar timerBar;
     private final KothScoreboard scoreboard;
+    private OvertimeState overtimeState = OvertimeState.NOT_IN_OVERTIME;
     private static final int LEAP_INTERVAL_TICKS = 5 * 20; // 5 second cooldown
     private static final double LEAP_VELOCITY = 1.0;
 
@@ -244,10 +245,41 @@ public class KothActive {
             arrow.remove();
         }
 
-        KothIdle.IdleTickResult result = this.idle.tick(time, gameWorld);
+        boolean overtime = false;
+        int alivePlayers = 0;
+
+        for (ServerPlayerEntity player : this.participants.keySet()) {
+            boolean onThrone = this.gameMap.throne.toBox().intersects(player.getBoundingBox());
+
+            if (!player.isSpectator()) {
+                alivePlayers += 1;
+            } else {
+                continue;
+            }
+
+            boolean dmNoWinner = this.config.deathmatch && (alivePlayers > 1);
+            boolean unclearWinner = onThrone && (this.config.winnerTakesAll || (this.getWinner() != player));
+
+            if (dmNoWinner || unclearWinner) {
+                overtime = true;
+            }
+        }
+
+        KothIdle.IdleTickResult result = this.idle.tick(time, gameWorld, overtime);
 
         switch (result) {
             case CONTINUE_TICK:
+                this.timerBar.update(this.idle.finishTime - time, this.config.timeLimitSecs * 20);
+                break;
+            case OVERTIME:
+                if (this.overtimeState == OvertimeState.NOT_IN_OVERTIME) {
+                    this.overtimeState = OvertimeState.IN_OVERTIME;
+                    KothActive.broadcastTitle(new LiteralText("Overtime!"), this.gameWorld);
+                    this.timerBar.setOvertime();
+                } else if (this.overtimeState == OvertimeState.JUST_ENTERED_OVERTIME) {
+                    this.overtimeState = OvertimeState.IN_OVERTIME;
+                }
+
                 break;
             case TICK_FINISHED:
                 return;
@@ -258,8 +290,6 @@ public class KothActive {
                 this.gameWorld.close();
                 return;
         }
-
-        this.timerBar.update(this.idle.finishTime - time, this.config.timeLimitSecs * 20);
 
         for (ServerPlayerEntity player : this.participants.keySet()) {
             player.setHealth(20.0f);
@@ -385,5 +415,11 @@ public class KothActive {
         }
 
         return winner != null ? winner.getKey() : null;
+    }
+
+    enum OvertimeState {
+        NOT_IN_OVERTIME,
+        JUST_ENTERED_OVERTIME,
+        IN_OVERTIME,
     }
 }

@@ -33,6 +33,11 @@ public final class KothTimerBar implements AutoCloseable {
         this.bar.removePlayer(player);
     }
 
+    public void setOvertime() {
+        this.bar.setPercent(1.0f);
+        this.bar.setName(new LiteralText("Overtime!"));
+    }
+
     private Text getText(long ticksUntilEnd) {
         long secondsUntilEnd = ticksUntilEnd / 20;
 

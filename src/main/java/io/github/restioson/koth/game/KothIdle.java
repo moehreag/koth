@@ -59,7 +59,7 @@ public class KothIdle {
         }
     }
 
-    public IdleTickResult tick(long time, GameWorld world) {
+    public IdleTickResult tick(long time, GameWorld world, boolean overtime) {
         // Game has finished. Wait a few seconds before finally closing the game.
         if (this.closeTime > 0) {
             if (time >= this.closeTime) {
@@ -90,18 +90,22 @@ public class KothIdle {
 
         // Game has just finished. Transition to the waiting-before-close state.
         if (time > this.finishTime || noPlayers) {
-            if (this.spectatorSetState == SpectatorSetState.BEFORE_WIN_CALCULATION) {
-                this.spectatorSetState = SpectatorSetState.NOT_YET_SET; // Give time to calculate win result
-            } else if (this.spectatorSetState == SpectatorSetState.NOT_YET_SET) {
-                this.spectatorSetState = SpectatorSetState.SET;
-                for (ServerPlayerEntity player : world.getPlayers()) {
-                    player.setGameMode(GameMode.SPECTATOR);
+            if (!overtime) {
+                if (this.spectatorSetState == SpectatorSetState.BEFORE_WIN_CALCULATION) {
+                    this.spectatorSetState = SpectatorSetState.NOT_YET_SET; // Give time to calculate win result
+                } else if (this.spectatorSetState == SpectatorSetState.NOT_YET_SET) {
+                    this.spectatorSetState = SpectatorSetState.SET;
+                    for (ServerPlayerEntity player : world.getPlayers()) {
+                        player.setGameMode(GameMode.SPECTATOR);
+                    }
                 }
+
+                this.closeTime = time + (5 * 20);
+
+                return IdleTickResult.GAME_FINISHED;
+            } else {
+                return IdleTickResult.OVERTIME;
             }
-
-            this.closeTime = time + (5 * 20);
-
-            return IdleTickResult.GAME_FINISHED;
         }
 
         return IdleTickResult.CONTINUE_TICK;
@@ -148,6 +152,7 @@ public class KothIdle {
         TICK_FINISHED,
         GAME_FINISHED,
         GAME_CLOSED,
+        OVERTIME,
     }
 
     private enum SpectatorSetState {
