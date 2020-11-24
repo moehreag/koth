@@ -273,6 +273,10 @@ public class KothActive {
             }
         }
 
+        if (this.config.winnerTakesAll && playersOnThrone == 0) {
+            overtime = true;
+        }
+
         KothStageManager.IdleTickResult result = this.stageManager.tick(time, gameWorld, overtime, this.round, this.gameFinished);
 
         switch (result) {

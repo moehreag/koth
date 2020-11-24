@@ -39,11 +39,15 @@ public class KothStageManager {
         String line2;
 
         if (config.deathmatch) {
-            line2 = "Deathmatch! Stay on the platform";
+            line2 = "Deathmatch! Stay on the platform.\n"
+                    + "If there are multiple players on the throne by the end, then the game will enter overtime.";
         } else if (!config.winnerTakesAll) {
-            line2 = "Score points by staying on top of the hill. Whoever reigns longest wins!";
+            line2 = "Score points by staying on top of the hill. Whoever reigns longest wins!\n" +
+                    "If someone who is not the point-score leader is on the throne by the end, then the game will enter\n" +
+                    " overtime until they become the ruler or are knocked off.";
         } else {
-            line2 = "Whoever is highest when the game ends wins!";
+            line2 = "Whoever is on the throne when the game ends wins!\n"
+                    + "If there are multiple people on the throne by the end, then the game will enter overtime.";
         }
 
         List<String> lines = new ArrayList<>();
