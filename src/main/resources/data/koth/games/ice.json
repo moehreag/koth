@@ -1,7 +1,7 @@
 {
   "type": "koth:koth",
   "map": {
-    "id": "koth:deathmatch",
+    "id": "koth:ice",
     "spawn_angle": 0
   },
   "deathmatch": true,

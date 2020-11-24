@@ -25,6 +25,7 @@ public class KothSpawnLogic {
         player.setGameMode(gameMode);
         player.setVelocity(Vec3d.ZERO);
         player.fallDistance = 0.0f;
+        player.setFireTicks(0);
 
         player.addStatusEffect(new StatusEffectInstance(
                 StatusEffects.NIGHT_VISION,
@@ -42,9 +43,23 @@ public class KothSpawnLogic {
         BlockPos min = bounds.getMin();
         BlockPos max = bounds.getMax();
 
-        double x = MathHelper.nextDouble(player.getRandom(), min.getX(), max.getX());
-        double z = MathHelper.nextDouble(player.getRandom(), min.getZ(), max.getZ());
+        boolean validSpawn = false;
+
+        double x = 0;
+        double z = 0;
         double y = min.getY() + 0.5;
+
+        while (!validSpawn) {
+            x = MathHelper.nextDouble(player.getRandom(), min.getX(), max.getX());
+            z = MathHelper.nextDouble(player.getRandom(), min.getZ(), max.getZ());
+
+            validSpawn = (!world.getBlockState(new BlockPos(x, min.getY(), z)).isAir()) ||
+                    (!world.getBlockState(new BlockPos(x, min.getY() - 1, z)).isAir()) ||
+                    (!world.getBlockState(new BlockPos(x, min.getY() - 2, z)).isAir());
+
+            System.out.println("Invalid spawn " + x + " " + (min.getY()) + " " + z + " ");
+        }
+
 
         player.teleport(world, x, y, z, this.map.spawnAngle, 0.0F);
     }

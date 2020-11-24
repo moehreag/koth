@@ -52,6 +52,10 @@ public class KothStageManager {
         List<String> lines = new ArrayList<>();
         Collections.addAll(lines, line1, line2);
 
+        if (this.config.firstTo != 1) {
+            lines.add("The game's winner will be whoever wins " + this.config.firstTo + " rounds first.");
+        }
+
         if (this.config.hasFeather) {
             lines.add("Right-click with your feather to leap forwards.");
         }

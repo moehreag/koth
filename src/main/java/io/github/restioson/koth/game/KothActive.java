@@ -118,6 +118,10 @@ public class KothActive {
     }
 
     private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
+        if (!player.isSpectator() && source.isFire()) {
+            this.spawnDeadParticipant(player, this.gameWorld.getWorld().getTime());
+        }
+
         return !this.pvpEnabled || (this.config.spawnInvuln && this.gameMap.noPvp.contains(player.getBlockPos()));
     }
 

@@ -46,6 +46,7 @@ public class KothWaiting {
                     builder.on(RequestStartListener.EVENT, waiting::requestStart);
                     builder.on(GameTickListener.EVENT, waiting::tick);
                     builder.on(PlayerAddListener.EVENT, waiting::addPlayer);
+                    builder.on(PlayerDamageListener.EVENT, waiting::onPlayerDamage);
                     builder.on(PlayerDeathListener.EVENT, waiting::onPlayerDeath);
                 });
 
@@ -71,8 +72,12 @@ public class KothWaiting {
         this.spawnPlayer(player);
     }
 
+    private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
+        this.spawnPlayer(player);
+        return true;
+    }
+
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-        player.setHealth(20.0f);
         this.spawnPlayer(player);
         return ActionResult.FAIL;
     }

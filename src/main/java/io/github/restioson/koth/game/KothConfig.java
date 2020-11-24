@@ -9,7 +9,7 @@ public class KothConfig {
     public static final Codec<KothConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             PlayerConfig.CODEC.fieldOf("players").forGetter(config -> config.playerConfig),
             MapConfig.CODEC.fieldOf("map").forGetter(config -> config.map),
-            Codec.INT.fieldOf("time_limit_secs").forGetter(config -> config.timeLimitSecs),
+            Codec.INT.optionalFieldOf("time_limit_secs", 0).forGetter(config -> config.timeLimitSecs),
             Codec.INT.optionalFieldOf("first_to", 1).forGetter(config -> config.firstTo),
             Codec.BOOL.optionalFieldOf("winner_takes_all", false).forGetter(config -> config.winnerTakesAll),
             Codec.BOOL.optionalFieldOf("has_stick", false).forGetter(config -> config.hasStick),
