@@ -36,11 +36,12 @@ public class KothStageManager {
     }
 
     public void onOpen(long time, KothConfig config, GameWorld world) {
+        String line1 = "King of the Hill - get to the top of the hill and knock off others to win!";
         String line2;
 
         if (config.deathmatch) {
-            line2 = "Deathmatch! Stay on the platform.\n"
-                    + "If there are multiple players on the throne by the end, then the game will enter overtime.";
+            line1 = "King of the Hill Deathmatch! - knock off other players and stay on the platform!";
+            line2 = "The last player standing wins!";
         } else if (!config.winnerTakesAll) {
             line2 = "Score points by staying on top of the hill. Whoever reigns longest wins!\n" +
                     "If someone who is not the point-score leader is on the throne by the end, then the game will enter\n" +
@@ -51,7 +52,7 @@ public class KothStageManager {
         }
 
         List<String> lines = new ArrayList<>();
-        Collections.addAll(lines, "King of the Hill - get to the top of the hill and knock off others to win!", line2);
+        Collections.addAll(lines, line1, line2);
 
         if (this.config.hasFeather) {
             lines.add("Right-click with your feather to leap forwards.");
@@ -67,24 +68,24 @@ public class KothStageManager {
         this.start(time);
     }
 
-    public IdleTickResult tick(long time, GameWorld world, boolean overtime, int round, boolean gameFinished) {
+    public TickResult tick(long time, GameWorld world, boolean overtime, boolean gameFinished) {
         // Game has finished. Wait a few seconds before finally closing the game.
         if (this.closeTime > 0) {
             if (time >= this.closeTime) {
                 if (gameFinished) {
-                    return IdleTickResult.GAME_CLOSED;
+                    return TickResult.GAME_CLOSED;
                 } else {
                     this.start(time); // Restart
-                    return IdleTickResult.NEXT_ROUND;
+                    return TickResult.NEXT_ROUND;
                 }
             }
-            return IdleTickResult.TICK_FINISHED;
+            return TickResult.TICK_FINISHED;
         }
 
         // Game hasn't started yet. Display a countdown before it begins.
         if (this.startTime > time) {
             this.tickStartWaiting(time, world);
-            return IdleTickResult.TICK_FINISHED;
+            return TickResult.TICK_FINISHED;
         }
 
         boolean noPlayers = world.getPlayerCount() == 0;
@@ -102,7 +103,7 @@ public class KothStageManager {
         }
 
         // Game has just finished. Transition to the waiting-before-close state.
-        if (time > this.finishTime || noPlayers) {
+        if ((time > this.finishTime && !this.config.deathmatch) || noPlayers) {
             if (!overtime) {
                 if (this.spectatorSetState == SpectatorSetState.BEFORE_WIN_CALCULATION) {
                     this.spectatorSetState = SpectatorSetState.NOT_YET_SET; // Give time to calculate win result
@@ -115,13 +116,13 @@ public class KothStageManager {
 
                 this.closeTime = time + (5 * 20);
 
-                return IdleTickResult.GAME_FINISHED;
+                return TickResult.GAME_FINISHED;
             } else {
-                return IdleTickResult.OVERTIME;
+                return TickResult.OVERTIME;
             }
         }
 
-        return IdleTickResult.CONTINUE_TICK;
+        return TickResult.CONTINUE_TICK;
     }
 
     private void tickStartWaiting(long time, GameWorld world) {
@@ -160,7 +161,7 @@ public class KothStageManager {
         public Vec3d lastPos;
     }
 
-    public enum IdleTickResult {
+    public enum TickResult {
         CONTINUE_TICK,
         TICK_FINISHED,
         NEXT_ROUND,

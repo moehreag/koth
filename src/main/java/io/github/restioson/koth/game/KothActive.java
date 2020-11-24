@@ -48,10 +48,9 @@ public class KothActive {
     private final Object2ObjectMap<ServerPlayerEntity, KothPlayer> participants;
     private final KothSpawnLogic spawnLogic;
     private final KothStageManager stageManager;
-    private final KothTimerBar timerBar;
+    private final Optional<KothTimerBar> timerBar;
     private final KothScoreboard scoreboard;
     private OvertimeState overtimeState = OvertimeState.NOT_IN_OVERTIME;
-    private int round;
     private boolean gameFinished;
     private static final int LEAP_INTERVAL_TICKS = 5 * 20; // 5 second cooldown
     private static final double LEAP_VELOCITY = 1.0;
@@ -62,7 +61,6 @@ public class KothActive {
         this.gameMap = map;
         this.spawnLogic = new KothSpawnLogic(gameWorld, map);
         this.participants = new Object2ObjectOpenHashMap<>();
-        this.round = 0;
 
         for (ServerPlayerEntity player : participants) {
             this.participants.put(player, new KothPlayer(player));
@@ -80,7 +78,12 @@ public class KothActive {
         this.scoreboard = new KothScoreboard(gameWorld, name, this.config.winnerTakesAll);
 
         this.stageManager = new KothStageManager(config);
-        this.timerBar = new KothTimerBar();
+
+        if (this.config.deathmatch) {
+            this.timerBar = Optional.empty();
+        } else {
+            this.timerBar = Optional.of(new KothTimerBar());
+        }
     }
 
     public static void open(GameWorld gameWorld, KothMap map, KothConfig config) {
@@ -169,7 +172,7 @@ public class KothActive {
     }
 
     private void onClose() {
-        this.timerBar.close();
+        this.timerBar.ifPresent(KothTimerBar::close);
         if (this.scoreboard != null) {
              this.scoreboard.close();
         }
@@ -179,12 +182,13 @@ public class KothActive {
         if (!this.participants.containsKey(player)) {
             this.spawnSpectator(player);
         }
-        this.timerBar.addPlayer(player);
+
+        this.timerBar.ifPresent(bar -> bar.addPlayer(player));
     }
 
     private void removePlayer(ServerPlayerEntity player) {
         this.participants.remove(player);
-        this.timerBar.removePlayer(player);
+        this.timerBar.ifPresent(bar -> bar.removePlayer(player));
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
@@ -265,29 +269,25 @@ public class KothActive {
                 playersOnThrone += 1;
             }
 
-            boolean dmNoWinner = this.config.deathmatch && (alivePlayers > 1);
-            boolean unclearWinner = playersOnThrone > 1 && (this.config.winnerTakesAll || (player != this.getWinner()));
-
-            if (dmNoWinner || unclearWinner) {
+            if (playersOnThrone > 1 && (this.config.winnerTakesAll || (player != this.getWinner()))) {
                 overtime = true;
             }
         }
 
-        if (this.config.winnerTakesAll && playersOnThrone == 0) {
-            overtime = true;
-        }
+        overtime |= this.config.winnerTakesAll && playersOnThrone == 0;
+        overtime |= this.config.deathmatch && alivePlayers > 1;
 
-        KothStageManager.IdleTickResult result = this.stageManager.tick(time, gameWorld, overtime, this.round, this.gameFinished);
+        KothStageManager.TickResult result = this.stageManager.tick(time, gameWorld, overtime, this.gameFinished);
 
         switch (result) {
             case CONTINUE_TICK:
-                this.timerBar.update(this.stageManager.finishTime - time, this.config.timeLimitSecs * 20);
+                this.timerBar.ifPresent(bar -> bar.update(this.stageManager.finishTime - time, this.config.timeLimitSecs * 20));
                 break;
             case OVERTIME:
                 if (this.overtimeState == OvertimeState.NOT_IN_OVERTIME) {
                     this.overtimeState = OvertimeState.IN_OVERTIME;
                     KothActive.broadcastTitle(new LiteralText("Overtime!"), this.gameWorld);
-                    this.timerBar.setOvertime();
+                    this.timerBar.ifPresent(KothTimerBar::setOvertime);
                 } else if (this.overtimeState == OvertimeState.JUST_ENTERED_OVERTIME) {
                     this.overtimeState = OvertimeState.IN_OVERTIME;
                 }
@@ -326,30 +326,37 @@ public class KothActive {
                 }
             }
 
-            if (!this.config.deathmatch) {
-                KothPlayer state = this.participants.get(player);
-                assert state != null;
+            KothPlayer state = this.participants.get(player);
+            assert state != null;
 
-                if (player.isSpectator()) {
-                    this.tickDead(player, state, time);
-                    continue;
-                }
+            if (player.isSpectator()) {
+                this.tickDead(player, state, time);
+                continue;
+            }
 
-                if (this.config.winnerTakesAll) {
-                    List<KothPlayer> top = this.participants.values().stream()
-                            .sorted(Comparator.comparingDouble(p -> -p.player.getY())) // Descending sort
-                            .limit(1)
-                            .collect(Collectors.toList());
-                    this.scoreboard.render(top);
-                    continue;
-                }
+            if (this.config.winnerTakesAll) {
+                List<KothPlayer> top = this.participants.values().stream()
+                        .sorted(Comparator.comparingDouble(p -> -p.player.getY())) // Descending sort
+                        .limit(1)
+                        .collect(Collectors.toList());
+                this.scoreboard.render(top);
+                continue;
+            }
 
-                if (this.gameMap.throne.toBox().intersects(player.getBoundingBox()) && time % 20 == 0) {
-                    state.score += 1;
-                    player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
-                    player.addExperienceLevels(1);
-                    this.scoreboard.render(this.buildLeaderboard());
-                }
+            if (this.config.deathmatch) {
+                List<KothPlayer> top = this.participants.values().stream()
+                        .sorted(Comparator.comparingDouble(p -> -p.wins)) // Descending sort
+                        .limit(5)
+                        .collect(Collectors.toList());
+                this.scoreboard.render(top);
+                continue;
+            }
+
+            if (this.gameMap.throne.toBox().intersects(player.getBoundingBox()) && time % 20 == 0) {
+                state.score += 1;
+                player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
+                player.addExperienceLevels(1);
+                this.scoreboard.render(this.buildLeaderboard());
             }
         }
     }
@@ -402,7 +409,6 @@ public class KothActive {
         PlayerSet players = this.gameWorld.getPlayerSet();
         players.sendMessage(message);
         players.sendSound(SoundEvents.ENTITY_VILLAGER_YES);
-        this.round++;
     }
 
     private ServerPlayerEntity getWinner() {
