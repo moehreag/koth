@@ -240,6 +240,10 @@ public class KothActive {
     }
 
     private void spawnParticipant(ServerPlayerEntity player) {
+        if (this.config.hasBow && !player.inventory.containsAny(new HashSet<>(Collections.singletonList(Items.BOW)))) {
+            this.maybeGiveBow(player);
+        }
+
         this.spawnLogic.resetPlayer(player, GameMode.ADVENTURE);
         this.spawnLogic.spawnPlayer(player);
     }
@@ -370,7 +374,6 @@ public class KothActive {
 
         if (time - state.deadTime > 5 * 20) {
             this.spawnParticipant(player);
-            this.maybeGiveBow(player);
         }
     }
 
