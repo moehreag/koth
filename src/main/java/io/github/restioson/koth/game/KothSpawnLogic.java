@@ -9,15 +9,15 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
-import xyz.nucleoid.plasmid.game.GameWorld;
+import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 
 public class KothSpawnLogic {
-    private final GameWorld gameWorld;
+    private final GameSpace gameSpace;
     private final KothMap map;
 
-    public KothSpawnLogic(GameWorld gameWorld, KothMap map) {
-        this.gameWorld = gameWorld;
+    public KothSpawnLogic(GameSpace gameSpace, KothMap map) {
+        this.gameSpace = gameSpace;
         this.map = map;
     }
 
@@ -37,7 +37,7 @@ public class KothSpawnLogic {
     }
 
     public void spawnPlayer(ServerPlayerEntity player) {
-        ServerWorld world = this.gameWorld.getWorld();
+        ServerWorld world = this.gameSpace.getWorld();
 
         BlockBounds bounds = this.map.spawn;
         BlockPos min = bounds.getMin();

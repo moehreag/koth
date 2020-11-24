@@ -1,5 +1,6 @@
 {
   "type": "koth:koth",
+  "name": "KotH: Skyland",
   "map": {
     "id": "koth:skyland",
     "spawn_angle": 180

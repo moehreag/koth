@@ -1,5 +1,6 @@
 package io.github.restioson.koth.game;
 
+import com.google.common.collect.Sets;
 import io.github.restioson.koth.game.map.KothMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -27,22 +28,37 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
-import xyz.nucleoid.plasmid.game.GameWorld;
-import xyz.nucleoid.plasmid.game.event.*;
+import xyz.nucleoid.plasmid.game.GameSpace;
+import xyz.nucleoid.plasmid.game.event.GameCloseListener;
+import xyz.nucleoid.plasmid.game.event.GameOpenListener;
+import xyz.nucleoid.plasmid.game.event.GameTickListener;
+import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
+import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
+import xyz.nucleoid.plasmid.game.event.PlayerDamageListener;
+import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
+import xyz.nucleoid.plasmid.game.event.PlayerRemoveListener;
+import xyz.nucleoid.plasmid.game.event.UseItemListener;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
+import xyz.nucleoid.plasmid.widget.GlobalWidgets;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class KothActive {
     private final KothConfig config;
 
-    public final GameWorld gameWorld;
+    public final GameSpace gameSpace;
     private final KothMap gameMap;
 
     private final Object2ObjectMap<ServerPlayerEntity, KothPlayer> participants;
@@ -56,11 +72,11 @@ public class KothActive {
     private static final double LEAP_VELOCITY = 1.0;
     private boolean pvpEnabled = false;
 
-    private KothActive(GameWorld gameWorld, KothMap map, KothConfig config, Set<ServerPlayerEntity> participants) {
-        this.gameWorld = gameWorld;
+    private KothActive(GameSpace gameSpace, KothMap map, KothConfig config, Set<ServerPlayerEntity> participants, GlobalWidgets widgets) {
+        this.gameSpace = gameSpace;
         this.config = config;
         this.gameMap = map;
-        this.spawnLogic = new KothSpawnLogic(gameWorld, map);
+        this.spawnLogic = new KothSpawnLogic(gameSpace, map);
         this.participants = new Object2ObjectOpenHashMap<>();
 
         for (ServerPlayerEntity player : participants) {
@@ -76,7 +92,7 @@ public class KothActive {
             name = "Longest-reigning Ruler";
         }
 
-        this.scoreboard = new KothScoreboard(gameWorld, name, this.config.winnerTakesAll, this.config.deathmatch);
+        this.scoreboard = new KothScoreboard(widgets, name, this.config.winnerTakesAll, this.config.deathmatch);
 
         this.stageManager = new KothStageManager(config);
 
@@ -87,42 +103,47 @@ public class KothActive {
         }
     }
 
-    public static void open(GameWorld gameWorld, KothMap map, KothConfig config) {
-        Set<ServerPlayerEntity> participants = new HashSet<>(gameWorld.getPlayers());
-        KothActive active = new KothActive(gameWorld, map, config, participants);
+    public static void open(GameSpace gameSpace, KothMap map, KothConfig config) {
+        gameSpace.openGame(game -> {
+            Set<ServerPlayerEntity> participants = Sets.newHashSet(gameSpace.getPlayers());
+            GlobalWidgets widgets = new GlobalWidgets(game);
+            KothActive active = new KothActive(gameSpace, map, config, participants, widgets);
 
-        gameWorld.openGame(builder -> {
-            builder.setRule(GameRule.CRAFTING, RuleResult.DENY);
-            builder.setRule(GameRule.PORTALS, RuleResult.DENY);
-            builder.setRule(GameRule.PVP, RuleResult.ALLOW);
-            builder.setRule(GameRule.HUNGER, RuleResult.DENY);
-            builder.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
-            builder.setRule(GameRule.INTERACTION, RuleResult.ALLOW);
-            builder.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
-            builder.setRule(GameRule.THROW_ITEMS, RuleResult.DENY);
-            builder.setRule(GameRule.UNSTABLE_TNT, RuleResult.DENY);
+            game.setRule(GameRule.CRAFTING, RuleResult.DENY);
+            game.setRule(GameRule.PORTALS, RuleResult.DENY);
+            game.setRule(GameRule.PVP, RuleResult.ALLOW);
+            game.setRule(GameRule.HUNGER, RuleResult.DENY);
+            game.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
+            game.setRule(GameRule.INTERACTION, RuleResult.ALLOW);
+            game.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
+            game.setRule(GameRule.THROW_ITEMS, RuleResult.DENY);
+            game.setRule(GameRule.UNSTABLE_TNT, RuleResult.DENY);
 
-            builder.on(GameOpenListener.EVENT, active::onOpen);
-            builder.on(GameCloseListener.EVENT, active::onClose);
+            game.on(GameOpenListener.EVENT, active::onOpen);
+            game.on(GameCloseListener.EVENT, active::onClose);
 
-            builder.on(OfferPlayerListener.EVENT, player -> JoinResult.ok());
-            builder.on(PlayerAddListener.EVENT, active::addPlayer);
-            builder.on(PlayerRemoveListener.EVENT, active::removePlayer);
+            game.on(OfferPlayerListener.EVENT, player -> JoinResult.ok());
+            game.on(PlayerAddListener.EVENT, active::addPlayer);
+            game.on(PlayerRemoveListener.EVENT, active::removePlayer);
 
-            builder.on(GameTickListener.EVENT, active::tick);
-            builder.on(UseItemListener.EVENT, active::onUseItem);
+            game.on(GameTickListener.EVENT, active::tick);
+            game.on(UseItemListener.EVENT, active::onUseItem);
 
-            builder.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
-            builder.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
+            game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
+            game.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
         });
     }
 
-    private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
+    private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
         if (!player.isSpectator() && source.isFire()) {
-            this.spawnDeadParticipant(player, this.gameWorld.getWorld().getTime());
+            this.spawnDeadParticipant(player, this.gameSpace.getWorld().getTime());
         }
 
-        return !this.pvpEnabled || (this.config.spawnInvuln && this.gameMap.noPvp.contains(player.getBlockPos()));
+        if (!this.pvpEnabled || (this.config.spawnInvuln && this.gameMap.noPvp.contains(player.getBlockPos()))) {
+            return ActionResult.FAIL;
+        }
+
+        return ActionResult.PASS;
     }
 
     private void maybeGiveBow(ServerPlayerEntity player) {
@@ -139,7 +160,7 @@ public class KothActive {
     }
 
     private void onOpen() {
-        ServerWorld world = this.gameWorld.getWorld();
+        ServerWorld world = this.gameSpace.getWorld();
         for (ServerPlayerEntity player : this.participants.keySet()) {
             this.spawnParticipant(player);
 
@@ -172,7 +193,7 @@ public class KothActive {
                 }
             }
         }
-        this.stageManager.onOpen(world.getTime(), this.config, this.gameWorld);
+        this.stageManager.onOpen(world.getTime(), this.config, this.gameSpace);
         this.scoreboard.renderTitle();
     }
 
@@ -197,7 +218,7 @@ public class KothActive {
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-        this.spawnDeadParticipant(player, this.gameWorld.getWorld().getTime());
+        this.spawnDeadParticipant(player, this.gameSpace.getWorld().getTime());
         return ActionResult.FAIL;
     }
 
@@ -231,7 +252,7 @@ public class KothActive {
         Inventories.remove(player.inventory, it -> it.getItem() == Items.BOW, 1, false);
 
         if (this.config.deathmatch) {
-            PlayerSet players = this.gameWorld.getPlayerSet();
+            PlayerSet players = this.gameSpace.getPlayers();
             players.sendMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.GOLD));
             players.sendSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP);
         } else {
@@ -254,7 +275,7 @@ public class KothActive {
     }
 
     private void tick() {
-        ServerWorld world = this.gameWorld.getWorld();
+        ServerWorld world = this.gameSpace.getWorld();
         long time = world.getTime();
 
         for (ArrowEntity arrow : world.getEntitiesByType(EntityType.ARROW, this.gameMap.bounds.toBox(), e -> e.inGround)) {
@@ -282,7 +303,7 @@ public class KothActive {
         overtime = playersOnThrone != 1;
         overtime |= this.config.deathmatch && alivePlayers > 1;
 
-        KothStageManager.TickResult result = this.stageManager.tick(time, gameWorld, overtime, this.gameFinished);
+        KothStageManager.TickResult result = this.stageManager.tick(time, gameSpace, overtime, this.gameFinished);
 
         switch (result) {
             case CONTINUE_TICK:
@@ -292,7 +313,7 @@ public class KothActive {
             case OVERTIME:
                 if (this.overtimeState == OvertimeState.NOT_IN_OVERTIME) {
                     this.overtimeState = OvertimeState.IN_OVERTIME;
-                    KothActive.broadcastTitle(new LiteralText("Overtime!"), this.gameWorld);
+                    KothActive.broadcastTitle(new LiteralText("Overtime!"), this.gameSpace);
                     this.timerBar.ifPresent(KothTimerBar::setOvertime);
                 } else if (this.overtimeState == OvertimeState.JUST_ENTERED_OVERTIME) {
                     this.overtimeState = OvertimeState.IN_OVERTIME;
@@ -311,7 +332,7 @@ public class KothActive {
                 this.broadcastWin(this.getWinner());
                 return;
             case GAME_CLOSED:
-                this.gameWorld.close();
+                this.gameSpace.close();
                 return;
         }
 
@@ -387,8 +408,8 @@ public class KothActive {
     }
 
 
-    protected static void broadcastTitle(Text message, GameWorld world) {
-        for (ServerPlayerEntity player : world.getPlayers()) {
+    protected static void broadcastTitle(Text message, GameSpace space) {
+        for (ServerPlayerEntity player : space.getPlayers()) {
             TitleS2CPacket packet = new TitleS2CPacket(TitleS2CPacket.Action.TITLE, message, 1, 5,  3);
             player.networkHandler.sendPacket(packet);
         }
@@ -416,7 +437,7 @@ public class KothActive {
 
         Text message = winner.getDisplayName().shallowCopy().append(" has won the ").append(wonThe).append("!").formatted(Formatting.GOLD);
 
-        PlayerSet players = this.gameWorld.getPlayerSet();
+        PlayerSet players = this.gameSpace.getPlayers();
         players.sendMessage(message);
         players.sendSound(SoundEvents.ENTITY_VILLAGER_YES);
     }

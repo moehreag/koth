@@ -7,56 +7,60 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.world.GameMode;
-import xyz.nucleoid.plasmid.game.*;
-import xyz.nucleoid.plasmid.game.event.*;
-import xyz.nucleoid.plasmid.world.bubble.BubbleWorldConfig;
-
-import java.util.concurrent.CompletableFuture;
+import xyz.nucleoid.fantasy.BubbleWorldConfig;
+import xyz.nucleoid.plasmid.game.GameOpenContext;
+import xyz.nucleoid.plasmid.game.GameOpenException;
+import xyz.nucleoid.plasmid.game.GameOpenProcedure;
+import xyz.nucleoid.plasmid.game.GameSpace;
+import xyz.nucleoid.plasmid.game.GameWaitingLobby;
+import xyz.nucleoid.plasmid.game.StartResult;
+import xyz.nucleoid.plasmid.game.event.GameTickListener;
+import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
+import xyz.nucleoid.plasmid.game.event.PlayerDamageListener;
+import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
+import xyz.nucleoid.plasmid.game.event.RequestStartListener;
 
 public class KothWaiting {
-    private final GameWorld gameWorld;
+    private final GameSpace gameSpace;
     private final KothMap map;
     private final KothConfig config;
     private final KothSpawnLogic spawnLogic;
 
-    private KothWaiting(GameWorld gameWorld, KothMap map, KothConfig config) {
-        this.gameWorld = gameWorld;
+    private KothWaiting(GameSpace gameSpace, KothMap map, KothConfig config) {
+        this.gameSpace = gameSpace;
         this.map = map;
         this.config = config;
-        this.spawnLogic = new KothSpawnLogic(gameWorld, map);
+        this.spawnLogic = new KothSpawnLogic(gameSpace, map);
     }
 
-    public static CompletableFuture<GameWorld> open(GameOpenContext<KothConfig> context) {
+    public static GameOpenProcedure open(GameOpenContext<KothConfig> context) {
         KothConfig config = context.getConfig();
         KothMapBuilder generator = new KothMapBuilder(context.getConfig().map);
+        KothMap map = generator.create();
 
-        return generator.create().thenCompose(map -> {
-            if (!config.winnerTakesAll && map.throne == null) {
-                throw new GameOpenException(new LiteralText("throne must exist if winner doesn't take all"));
-            }
+        if (!config.winnerTakesAll && map.throne == null) {
+            throw new GameOpenException(new LiteralText("throne must exist if winner doesn't take all"));
+        }
 
-            BubbleWorldConfig worldConfig = new BubbleWorldConfig()
-                    .setGenerator(map.asGenerator(context.getServer()))
-                    .setDefaultGameMode(GameMode.SPECTATOR);
+        BubbleWorldConfig worldConfig = new BubbleWorldConfig()
+                .setGenerator(map.asGenerator(context.getServer()))
+                .setDefaultGameMode(GameMode.SPECTATOR);
 
-            return context.openWorld(worldConfig).thenApply(gameWorld -> {
-                KothWaiting waiting = new KothWaiting(gameWorld, map, context.getConfig());
+        return context.createOpenProcedure(worldConfig, game -> {
+            KothWaiting waiting = new KothWaiting(game.getSpace(), map, context.getConfig());
 
-                GameWaitingLobby.open(gameWorld, context.getConfig().playerConfig, builder -> {
-                    builder.on(RequestStartListener.EVENT, waiting::requestStart);
-                    builder.on(GameTickListener.EVENT, waiting::tick);
-                    builder.on(PlayerAddListener.EVENT, waiting::addPlayer);
-                    builder.on(PlayerDamageListener.EVENT, waiting::onPlayerDamage);
-                    builder.on(PlayerDeathListener.EVENT, waiting::onPlayerDeath);
-                });
+            GameWaitingLobby.applyTo(game, config.playerConfig);
 
-                return gameWorld;
-            });
+            game.on(RequestStartListener.EVENT, waiting::requestStart);
+            game.on(GameTickListener.EVENT, waiting::tick);
+            game.on(PlayerAddListener.EVENT, waiting::addPlayer);
+            game.on(PlayerDamageListener.EVENT, waiting::onPlayerDamage);
+            game.on(PlayerDeathListener.EVENT, waiting::onPlayerDeath);
         });
     }
 
     private void tick() {
-        for (ServerPlayerEntity player : this.gameWorld.getWorld().getPlayers()) {
+        for (ServerPlayerEntity player : this.gameSpace.getWorld().getPlayers()) {
             if (!this.map.bounds.contains(player.getBlockPos())) {
                 this.spawnPlayer(player);
             }
@@ -64,7 +68,7 @@ public class KothWaiting {
     }
 
     private StartResult requestStart() {
-        KothActive.open(this.gameWorld, this.map, this.config);
+        KothActive.open(this.gameSpace, this.map, this.config);
         return StartResult.OK;
     }
 
@@ -72,12 +76,12 @@ public class KothWaiting {
         this.spawnPlayer(player);
     }
 
-    private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
+    private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
         if (source.isFire()) {
             this.spawnPlayer(player);
         }
 
-        return true;
+        return ActionResult.FAIL;
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {

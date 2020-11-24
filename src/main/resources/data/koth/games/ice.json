@@ -1,5 +1,6 @@
 {
   "type": "koth:koth",
+  "name": "KotH: Ice",
   "map": {
     "id": "koth:ice",
     "spawn_angle": 0

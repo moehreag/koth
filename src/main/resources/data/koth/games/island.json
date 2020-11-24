@@ -1,5 +1,6 @@
 {
   "type": "koth:koth",
+  "name": "KotH: Island",
   "map": {
     "id": "koth:island",
     "spawn_angle": 0

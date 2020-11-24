@@ -5,10 +5,12 @@ import io.github.restioson.koth.game.KothConfig;
 import net.minecraft.text.LiteralText;
 import net.minecraft.world.biome.BiomeKeys;
 import xyz.nucleoid.plasmid.game.GameOpenException;
-import xyz.nucleoid.plasmid.game.map.template.MapTemplateSerializer;
+import xyz.nucleoid.plasmid.map.template.MapTemplate;
+import xyz.nucleoid.plasmid.map.template.MapTemplateMetadata;
+import xyz.nucleoid.plasmid.map.template.MapTemplateSerializer;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 
-import java.util.concurrent.CompletableFuture;
+import java.io.IOException;
 
 public class KothMapBuilder {
 
@@ -18,20 +20,25 @@ public class KothMapBuilder {
         this.config = config;
     }
 
-    public CompletableFuture<KothMap> create() throws GameOpenException {
-        return MapTemplateSerializer.INSTANCE.load(this.config.id).thenApply(template -> {
-            BlockBounds spawn = template.getFirstRegion("spawn");
+    public KothMap create() throws GameOpenException {
+        try {
+            MapTemplate template = MapTemplateSerializer.INSTANCE.loadFromResource(this.config.id);
+            MapTemplateMetadata metadata = template.getMetadata();
+
+            BlockBounds spawn = metadata.getFirstRegionBounds("spawn");
             if (spawn == null) {
                 Koth.LOGGER.error("No spawn is defined on the map! The game will not work.");
                 throw new GameOpenException(new LiteralText("no spawn defined"));
             }
 
-            BlockBounds throne = template.getFirstRegion("throne");
+            BlockBounds throne = metadata.getFirstRegionBounds("throne");
 
             KothMap map = new KothMap(template, spawn, throne, this.config.spawnAngle);
             template.setBiome(BiomeKeys.PLAINS);
 
             return map;
-        });
+        } catch (IOException e) {
+            throw new GameOpenException(new LiteralText("Failed to load template"), e);
+        }
     }
 }

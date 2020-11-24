@@ -9,7 +9,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
-import xyz.nucleoid.plasmid.game.GameWorld;
+import xyz.nucleoid.plasmid.game.GameSpace;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,7 +33,7 @@ public class KothStageManager {
         this.closeTime = -1;
     }
 
-    public void onOpen(long time, KothConfig config, GameWorld world) {
+    public void onOpen(long time, KothConfig config, GameSpace space) {
         String line1 = "King of the Hill - get to the top of the hill and knock off others to win!";
         String line2;
 
@@ -60,7 +60,7 @@ public class KothStageManager {
             lines.add("Right-click with your feather to leap forwards.");
         }
 
-        for (ServerPlayerEntity player : world.getPlayers()) {
+        for (ServerPlayerEntity player : space.getPlayers()) {
             for (String line : lines) {
                 Text text = new LiteralText(line).formatted(Formatting.GOLD);
                 player.sendMessage(text, false);
@@ -70,7 +70,7 @@ public class KothStageManager {
         this.start(time);
     }
 
-    public TickResult tick(long time, GameWorld world, boolean overtime, boolean gameFinished) {
+    public TickResult tick(long time, GameSpace space, boolean overtime, boolean gameFinished) {
         // Game has finished. Wait a few seconds before finally closing the game.
         if (this.closeTime > 0) {
             if (time >= this.closeTime) {
@@ -86,14 +86,14 @@ public class KothStageManager {
 
         // Game hasn't started yet. Display a countdown before it begins.
         if (this.startTime > time) {
-            this.tickStartWaiting(time, world);
+            this.tickStartWaiting(time, space);
             return TickResult.TICK_FINISHED;
         }
 
-        boolean noPlayers = world.getPlayerCount() == 0;
+        boolean noPlayers = space.getPlayerCount() == 0;
         if (this.config.deathmatch) {
             int remainingPlayers = 0;
-            for (ServerPlayerEntity player : world.getPlayerSet()) {
+            for (ServerPlayerEntity player : space.getPlayers()) {
                 if (!player.isSpectator()) {
                     remainingPlayers++;
                 }
@@ -117,11 +117,11 @@ public class KothStageManager {
         return TickResult.CONTINUE_TICK;
     }
 
-    private void tickStartWaiting(long time, GameWorld world) {
+    private void tickStartWaiting(long time, GameSpace space) {
         float sec_f = (this.startTime - time) / 20.0f;
 
         if (sec_f > 1) {
-            for (ServerPlayerEntity player : world.getPlayers()) {
+            for (ServerPlayerEntity player : space.getPlayers()) {
                 if (player.isSpectator()) {
                     continue;
                 }
@@ -140,11 +140,11 @@ public class KothStageManager {
 
         if ((this.startTime - time) % 20 == 0) {
             if (sec > 0) {
-                KothActive.broadcastTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD), world);
-                world.getPlayerSet().sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 1.0F);
+                KothActive.broadcastTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD), space);
+                space.getPlayers().sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 1.0F);
             } else {
-                KothActive.broadcastTitle(new LiteralText("Go!").formatted(Formatting.BOLD), world);
-                world.getPlayerSet().sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 2.0F);
+                KothActive.broadcastTitle(new LiteralText("Go!").formatted(Formatting.BOLD), space);
+                space.getPlayers().sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 2.0F);
             }
         }
     }

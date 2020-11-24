@@ -1,5 +1,6 @@
 {
   "type": "koth:koth",
+  "name": "KotH: Cotton Candy (WTA)",
   "map": {
     "id": "koth:cotton_candy",
     "spawn_angle": 180

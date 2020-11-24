@@ -1,5 +1,6 @@
 {
   "type": "koth:koth",
+  "name": "KotH: Stack",
   "map": {
     "id": "koth:stack",
     "spawn_angle": 50
