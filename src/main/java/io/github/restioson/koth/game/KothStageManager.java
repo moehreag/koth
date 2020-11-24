@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class KothIdle {
+public class KothStageManager {
     private final KothConfig config;
     private long closeTime = -1;
     public long finishTime = -1;
@@ -24,14 +24,18 @@ public class KothIdle {
     private final Object2ObjectMap<ServerPlayerEntity, FrozenPlayer> frozen;
     private SpectatorSetState spectatorSetState = SpectatorSetState.BEFORE_WIN_CALCULATION;
 
-    public KothIdle(KothConfig config) {
+    public KothStageManager(KothConfig config) {
         this.config = config;
         this.frozen = new Object2ObjectOpenHashMap<>();
     }
 
-    public void onOpen(long time, KothConfig config, GameWorld world) {
+    private void start(long time) {
         this.startTime = time - (time % 20) + (4 * 20) + 19;
         this.finishTime = this.startTime + (config.timeLimitSecs * 20);
+        this.closeTime = -1;
+    }
+
+    public void onOpen(long time, KothConfig config, GameWorld world) {
         String line2;
 
         if (config.deathmatch) {
@@ -54,16 +58,21 @@ public class KothIdle {
                 Text text = new LiteralText(line).formatted(Formatting.GOLD);
                 player.sendMessage(text, false);
             }
-
-            player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         }
+
+        this.start(time);
     }
 
-    public IdleTickResult tick(long time, GameWorld world, boolean overtime) {
+    public IdleTickResult tick(long time, GameWorld world, boolean overtime, int round, boolean gameFinished) {
         // Game has finished. Wait a few seconds before finally closing the game.
         if (this.closeTime > 0) {
             if (time >= this.closeTime) {
-                return IdleTickResult.GAME_CLOSED;
+                if (gameFinished) {
+                    return IdleTickResult.GAME_CLOSED;
+                } else {
+                    this.start(time); // Restart
+                    return IdleTickResult.NEXT_ROUND;
+                }
             }
             return IdleTickResult.TICK_FINISHED;
         }
@@ -150,6 +159,7 @@ public class KothIdle {
     public enum IdleTickResult {
         CONTINUE_TICK,
         TICK_FINISHED,
+        NEXT_ROUND,
         GAME_FINISHED,
         GAME_CLOSED,
         OVERTIME,

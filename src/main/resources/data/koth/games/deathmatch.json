@@ -11,5 +11,6 @@
     "max": 100
   },
   "time_limit_secs": 60,
-  "has_stick": true
+  "has_stick": true,
+  "first_to": 3
 }

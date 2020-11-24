@@ -10,7 +10,7 @@ public class KothConfig {
             PlayerConfig.CODEC.fieldOf("players").forGetter(config -> config.playerConfig),
             MapConfig.CODEC.fieldOf("map").forGetter(config -> config.map),
             Codec.INT.fieldOf("time_limit_secs").forGetter(config -> config.timeLimitSecs),
-            Codec.INT.optionalFieldOf("best_of", 1).forGetter(config -> config.bestOf),
+            Codec.INT.optionalFieldOf("first_to", 1).forGetter(config -> config.firstTo),
             Codec.BOOL.optionalFieldOf("winner_takes_all", false).forGetter(config -> config.winnerTakesAll),
             Codec.BOOL.optionalFieldOf("has_stick", false).forGetter(config -> config.hasStick),
             Codec.BOOL.optionalFieldOf("has_bow", false).forGetter(config -> config.hasStick),
@@ -21,7 +21,7 @@ public class KothConfig {
     public final PlayerConfig playerConfig;
     public final MapConfig map;
     public final int timeLimitSecs;
-    public final int bestOf;
+    public final int firstTo;
     public final boolean winnerTakesAll;
     public final boolean hasStick;
     public final boolean hasBow;
@@ -32,7 +32,7 @@ public class KothConfig {
             PlayerConfig players,
             MapConfig map,
             int timeLimitSecs,
-            int bestOf,
+            int firstTo,
             boolean winnerTakesAll,
             boolean hasStick,
             boolean hasBow,
@@ -42,7 +42,7 @@ public class KothConfig {
         this.playerConfig = players;
         this.map = map;
         this.timeLimitSecs = timeLimitSecs;
-        this.bestOf = bestOf;
+        this.firstTo = firstTo;
         this.winnerTakesAll = winnerTakesAll;
         this.hasStick = hasStick;
         this.hasBow = hasBow;

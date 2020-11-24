@@ -47,10 +47,12 @@ public class KothActive {
 
     private final Object2ObjectMap<ServerPlayerEntity, KothPlayer> participants;
     private final KothSpawnLogic spawnLogic;
-    private final KothIdle idle;
+    private final KothStageManager stageManager;
     private final KothTimerBar timerBar;
     private final KothScoreboard scoreboard;
     private OvertimeState overtimeState = OvertimeState.NOT_IN_OVERTIME;
+    private int round;
+    private boolean gameFinished;
     private static final int LEAP_INTERVAL_TICKS = 5 * 20; // 5 second cooldown
     private static final double LEAP_VELOCITY = 1.0;
 
@@ -60,6 +62,7 @@ public class KothActive {
         this.gameMap = map;
         this.spawnLogic = new KothSpawnLogic(gameWorld, map);
         this.participants = new Object2ObjectOpenHashMap<>();
+        this.round = 0;
 
         for (ServerPlayerEntity player : participants) {
             this.participants.put(player, new KothPlayer(player));
@@ -76,7 +79,7 @@ public class KothActive {
 
         this.scoreboard = new KothScoreboard(gameWorld, name, this.config.winnerTakesAll);
 
-        this.idle = new KothIdle(config);
+        this.stageManager = new KothStageManager(config);
         this.timerBar = new KothTimerBar();
     }
 
@@ -161,7 +164,7 @@ public class KothActive {
                 }
             }
         }
-        this.idle.onOpen(world.getTime(), this.config, this.gameWorld);
+        this.stageManager.onOpen(world.getTime(), this.config, this.gameWorld);
         this.scoreboard.renderTitle();
     }
 
@@ -203,7 +206,7 @@ public class KothActive {
                     player.setVelocity(oldVel.x, oldVel.y + 0.1f, oldVel.z);
                     player.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(player));
 
-                    player.playSound(SoundEvents.ENTITY_HORSE_SADDLE, 1.0F, 1.0F);
+                    player.playSound(SoundEvents.ENTITY_HORSE_SADDLE, SoundCategory.PLAYERS, 1.0F, 1.0F);
                     cooldown.set(heldStack.getItem(), LEAP_INTERVAL_TICKS);
                 }
             }
@@ -247,29 +250,34 @@ public class KothActive {
 
         boolean overtime = false;
         int alivePlayers = 0;
+        int playersOnThrone = 0;
 
         for (ServerPlayerEntity player : this.participants.keySet()) {
-            boolean onThrone = this.gameMap.throne.toBox().intersects(player.getBoundingBox());
-
             if (!player.isSpectator()) {
                 alivePlayers += 1;
             } else {
                 continue;
             }
 
+            boolean onThrone = this.gameMap.throne.toBox().intersects(player.getBoundingBox());
+
+            if (onThrone) {
+                playersOnThrone += 1;
+            }
+
             boolean dmNoWinner = this.config.deathmatch && (alivePlayers > 1);
-            boolean unclearWinner = onThrone && (this.config.winnerTakesAll || (this.getWinner() != player));
+            boolean unclearWinner = playersOnThrone > 1 && (this.config.winnerTakesAll || (player != this.getWinner()));
 
             if (dmNoWinner || unclearWinner) {
                 overtime = true;
             }
         }
 
-        KothIdle.IdleTickResult result = this.idle.tick(time, gameWorld, overtime);
+        KothStageManager.IdleTickResult result = this.stageManager.tick(time, gameWorld, overtime, this.round, this.gameFinished);
 
         switch (result) {
             case CONTINUE_TICK:
-                this.timerBar.update(this.idle.finishTime - time, this.config.timeLimitSecs * 20);
+                this.timerBar.update(this.stageManager.finishTime - time, this.config.timeLimitSecs * 20);
                 break;
             case OVERTIME:
                 if (this.overtimeState == OvertimeState.NOT_IN_OVERTIME) {
@@ -281,6 +289,10 @@ public class KothActive {
                 }
 
                 break;
+            case NEXT_ROUND:
+                for (ServerPlayerEntity participant : this.participants.keySet()) {
+                    this.spawnParticipant(participant);
+                }
             case TICK_FINISHED:
                 return;
             case GAME_FINISHED:
@@ -370,31 +382,32 @@ public class KothActive {
     }
 
     private void broadcastWin(ServerPlayerEntity winner) {
-        Text message;
-        if (winner != null) {
-             message = winner.getDisplayName().shallowCopy().append(" has won the game!").formatted(Formatting.GOLD);
+        KothPlayer participant = this.participants.get(winner);
+        participant.wins++;
+        String wonThe;
+
+        if (participant.wins == this.config.firstTo) {
+            wonThe = "game";
+            this.gameFinished = true;
         } else {
-            message = new LiteralText("The game ended, but nobody won!").formatted(Formatting.GOLD);
+            wonThe = "round";
         }
+
+        Text message = winner.getDisplayName().shallowCopy().append(" has won the ").append(wonThe).append("!").formatted(Formatting.GOLD);
 
         PlayerSet players = this.gameWorld.getPlayerSet();
         players.sendMessage(message);
         players.sendSound(SoundEvents.ENTITY_VILLAGER_YES);
+        this.round++;
     }
 
     private ServerPlayerEntity getWinner() {
         if (this.config.deathmatch) {
-            ServerPlayerEntity winner = null;
             for (ServerPlayerEntity player : this.participants.keySet()) {
                 if (!player.isSpectator()) {
-                    if (winner != null) {
-                        return null;
-                    }
-                    winner = player;
+                    return player;
                 }
             }
-
-            return winner;
         }
 
         Map.Entry<ServerPlayerEntity, KothPlayer> winner = null;
