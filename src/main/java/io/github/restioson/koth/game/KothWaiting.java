@@ -73,7 +73,10 @@ public class KothWaiting {
     }
 
     private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
-        this.spawnPlayer(player);
+        if (source.isFire()) {
+            this.spawnPlayer(player);
+        }
+
         return true;
     }
 

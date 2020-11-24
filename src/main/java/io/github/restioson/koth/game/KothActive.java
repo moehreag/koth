@@ -54,7 +54,7 @@ public class KothActive {
     private boolean gameFinished;
     private static final int LEAP_INTERVAL_TICKS = 5 * 20; // 5 second cooldown
     private static final double LEAP_VELOCITY = 1.0;
-    private boolean pvpEnabled = true;
+    private boolean pvpEnabled = false;
 
     private KothActive(GameWorld gameWorld, KothMap map, KothConfig config, Set<ServerPlayerEntity> participants) {
         this.gameWorld = gameWorld;
@@ -273,13 +273,9 @@ public class KothActive {
             if (onThrone) {
                 playersOnThrone += 1;
             }
-
-            if (playersOnThrone > 1 && (this.config.winnerTakesAll || (player != this.getWinner()))) {
-                overtime = true;
-            }
         }
 
-        overtime |= this.config.winnerTakesAll && playersOnThrone == 0;
+        overtime = playersOnThrone != 1;
         overtime |= this.config.deathmatch && alivePlayers > 1;
 
         KothStageManager.TickResult result = this.stageManager.tick(time, gameWorld, overtime, this.gameFinished);

@@ -107,7 +107,7 @@ public class KothStageManager {
         // Game has just finished. Transition to the waiting-before-close state.
         if (time > this.finishTime || noPlayers) {
             if (!overtime) {
-                this.closeTime = time + (5 * 20);
+                this.closeTime = time + (2 * 20);
                 return TickResult.GAME_FINISHED;
             } else if (!this.config.deathmatch) {
                 return TickResult.OVERTIME;
