@@ -103,7 +103,7 @@ public class KothStageManager {
         }
 
         // Game has just finished. Transition to the waiting-before-close state.
-        if ((time > this.finishTime && !this.config.deathmatch) || noPlayers) {
+        if (time > this.finishTime || noPlayers) {
             if (!overtime) {
                 if (this.spectatorSetState == SpectatorSetState.BEFORE_WIN_CALCULATION) {
                     this.spectatorSetState = SpectatorSetState.NOT_YET_SET; // Give time to calculate win result

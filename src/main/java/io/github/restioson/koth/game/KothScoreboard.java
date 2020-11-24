@@ -4,19 +4,22 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.util.Formatting;
 import xyz.nucleoid.plasmid.game.GameWorld;
 import xyz.nucleoid.plasmid.widget.SidebarWidget;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class KothScoreboard implements AutoCloseable {
     private final SidebarWidget sidebar;
     private final boolean winnerTakesAll;
+    private final boolean deathMatch;
 
-    public KothScoreboard(GameWorld world, String name, boolean wta) {
+    public KothScoreboard(GameWorld world, String name, boolean wta, boolean dm) {
         this.sidebar = SidebarWidget.open(
                 new LiteralText(name).formatted(Formatting.BLUE, Formatting.BOLD),
                 world.getPlayerSet()
         );
         this.winnerTakesAll = wta;
+        this.deathMatch = dm;
     }
 
     public void renderTitle() {
@@ -31,6 +34,14 @@ public class KothScoreboard implements AutoCloseable {
 
             if (this.winnerTakesAll) {
                 line = String.format("Ruler: %s%s%s", Formatting.AQUA, entry.player.getEntityName(), Formatting.RESET);
+            } else if (this.deathMatch) {
+                line = String.format(
+                        "%s%s%s: %d rounds",
+                        Formatting.AQUA,
+                        entry.player.getEntityName(),
+                        Formatting.RESET,
+                        entry.score
+                );
             } else {
                 line = String.format(
                         "%s%s%s: %ds",

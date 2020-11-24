@@ -75,7 +75,7 @@ public class KothActive {
             name = "Longest-reigning Ruler";
         }
 
-        this.scoreboard = new KothScoreboard(gameWorld, name, this.config.winnerTakesAll);
+        this.scoreboard = new KothScoreboard(gameWorld, name, this.config.winnerTakesAll, this.config.deathmatch);
 
         this.stageManager = new KothStageManager(config);
 
