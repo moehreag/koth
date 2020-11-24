@@ -9,7 +9,6 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameWorld;
 
 import java.util.ArrayList;
@@ -22,7 +21,6 @@ public class KothStageManager {
     public long finishTime = -1;
     private long startTime = -1;
     private final Object2ObjectMap<ServerPlayerEntity, FrozenPlayer> frozen;
-    private SpectatorSetState spectatorSetState = SpectatorSetState.BEFORE_WIN_CALCULATION;
 
     public KothStageManager(KothConfig config) {
         this.config = config;
@@ -105,19 +103,9 @@ public class KothStageManager {
         // Game has just finished. Transition to the waiting-before-close state.
         if (time > this.finishTime || noPlayers) {
             if (!overtime) {
-                if (this.spectatorSetState == SpectatorSetState.BEFORE_WIN_CALCULATION) {
-                    this.spectatorSetState = SpectatorSetState.NOT_YET_SET; // Give time to calculate win result
-                } else if (this.spectatorSetState == SpectatorSetState.NOT_YET_SET) {
-                    this.spectatorSetState = SpectatorSetState.SET;
-                    for (ServerPlayerEntity player : world.getPlayers()) {
-                        player.setGameMode(GameMode.SPECTATOR);
-                    }
-                }
-
                 this.closeTime = time + (5 * 20);
-
                 return TickResult.GAME_FINISHED;
-            } else {
+            } else if (!this.config.deathmatch) {
                 return TickResult.OVERTIME;
             }
         }
@@ -164,15 +152,10 @@ public class KothStageManager {
     public enum TickResult {
         CONTINUE_TICK,
         TICK_FINISHED,
+        TICK_FINISHED_PLAYERS_FROZEN,
         NEXT_ROUND,
         GAME_FINISHED,
         GAME_CLOSED,
         OVERTIME,
-    }
-
-    private enum SpectatorSetState {
-        BEFORE_WIN_CALCULATION,
-        NOT_YET_SET,
-        SET,
     }
 }

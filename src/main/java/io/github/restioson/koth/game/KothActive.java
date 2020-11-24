@@ -54,6 +54,7 @@ public class KothActive {
     private boolean gameFinished;
     private static final int LEAP_INTERVAL_TICKS = 5 * 20; // 5 second cooldown
     private static final double LEAP_VELOCITY = 1.0;
+    private boolean pvpEnabled = true;
 
     private KothActive(GameWorld gameWorld, KothMap map, KothConfig config, Set<ServerPlayerEntity> participants) {
         this.gameWorld = gameWorld;
@@ -117,7 +118,7 @@ public class KothActive {
     }
 
     private boolean onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
-        return this.gameMap.noPvp.contains(player.getBlockPos());
+        return !this.pvpEnabled || (this.config.spawnInvuln && this.gameMap.noPvp.contains(player.getBlockPos()));
     }
 
     private void maybeGiveBow(ServerPlayerEntity player) {
@@ -192,7 +193,7 @@ public class KothActive {
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-        this.spawnParticipant(player);
+        this.spawnDeadParticipant(player, this.gameWorld.getWorld().getTime());
         return ActionResult.FAIL;
     }
 
@@ -281,6 +282,7 @@ public class KothActive {
 
         switch (result) {
             case CONTINUE_TICK:
+                this.pvpEnabled = true;
                 this.timerBar.ifPresent(bar -> bar.update(this.stageManager.finishTime - time, this.config.timeLimitSecs * 20));
                 break;
             case OVERTIME:
@@ -297,6 +299,8 @@ public class KothActive {
                 for (ServerPlayerEntity participant : this.participants.keySet()) {
                     this.spawnParticipant(participant);
                 }
+            case TICK_FINISHED_PLAYERS_FROZEN:
+                this.pvpEnabled = false;
             case TICK_FINISHED:
                 return;
             case GAME_FINISHED:
@@ -326,6 +330,10 @@ public class KothActive {
                 }
             }
 
+            if (this.config.deathmatch) {
+                continue;
+            }
+
             KothPlayer state = this.participants.get(player);
             assert state != null;
 
@@ -338,15 +346,6 @@ public class KothActive {
                 List<KothPlayer> top = this.participants.values().stream()
                         .sorted(Comparator.comparingDouble(p -> -p.player.getY())) // Descending sort
                         .limit(1)
-                        .collect(Collectors.toList());
-                this.scoreboard.render(top);
-                continue;
-            }
-
-            if (this.config.deathmatch) {
-                List<KothPlayer> top = this.participants.values().stream()
-                        .sorted(Comparator.comparingDouble(p -> -p.wins)) // Descending sort
-                        .limit(5)
                         .collect(Collectors.toList());
                 this.scoreboard.render(top);
                 continue;
@@ -396,6 +395,14 @@ public class KothActive {
         KothPlayer participant = this.participants.get(winner);
         participant.wins++;
         String wonThe;
+
+        if (this.config.deathmatch) {
+            List<KothPlayer> top = this.participants.values().stream()
+                    .sorted(Comparator.comparingDouble(p -> -p.wins)) // Descending sort
+                    .limit(5)
+                    .collect(Collectors.toList());
+            this.scoreboard.render(top);
+        }
 
         if (participant.wins == this.config.firstTo) {
             wonThe = "game";

@@ -12,5 +12,6 @@
   },
   "time_limit_secs": 60,
   "has_stick": true,
-  "first_to": 3
+  "first_to": 3,
+  "spawn_invulnerability": false
 }

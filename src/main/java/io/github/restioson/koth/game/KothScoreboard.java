@@ -40,7 +40,7 @@ public class KothScoreboard implements AutoCloseable {
                         Formatting.AQUA,
                         entry.player.getEntityName(),
                         Formatting.RESET,
-                        entry.score
+                        entry.wins
                 );
             } else {
                 line = String.format(

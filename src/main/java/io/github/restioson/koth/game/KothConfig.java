@@ -15,7 +15,8 @@ public class KothConfig {
             Codec.BOOL.optionalFieldOf("has_stick", false).forGetter(config -> config.hasStick),
             Codec.BOOL.optionalFieldOf("has_bow", false).forGetter(config -> config.hasStick),
             Codec.BOOL.optionalFieldOf("has_feather", false).forGetter(config -> config.hasFeather),
-            Codec.BOOL.optionalFieldOf("deathmatch", false).forGetter(config -> config.deathmatch)
+            Codec.BOOL.optionalFieldOf("deathmatch", false).forGetter(config -> config.deathmatch),
+            Codec.BOOL.optionalFieldOf("spawn_invulnerability", true).forGetter(config -> config.spawnInvuln)
     ).apply(instance, KothConfig::new));
 
     public final PlayerConfig playerConfig;
@@ -27,6 +28,7 @@ public class KothConfig {
     public final boolean hasBow;
     public final boolean hasFeather;
     public final boolean deathmatch;
+    public final boolean spawnInvuln;
 
     public KothConfig(
             PlayerConfig players,
@@ -37,7 +39,8 @@ public class KothConfig {
             boolean hasStick,
             boolean hasBow,
             boolean hasFeather,
-            boolean deathmatch
+            boolean deathmatch,
+            boolean spawnInvuln
     ) {
         this.playerConfig = players;
         this.map = map;
@@ -48,6 +51,7 @@ public class KothConfig {
         this.hasBow = hasBow;
         this.hasFeather = hasFeather;
         this.deathmatch = deathmatch;
+        this.spawnInvuln = spawnInvuln;
     }
 
     public static class MapConfig {
