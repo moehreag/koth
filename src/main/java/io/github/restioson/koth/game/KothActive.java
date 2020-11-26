@@ -291,7 +291,7 @@ public class KothActive {
             arrow.remove();
         }
 
-        boolean overtime;
+        boolean overtime = false;
         int alivePlayers = 0;
         int playersOnThrone = 0;
 
@@ -307,9 +307,13 @@ public class KothActive {
             if (onThrone) {
                 playersOnThrone += 1;
             }
+
+            if (onThrone && player != this.getWinner()) {
+                overtime = true;
+            }
         }
 
-        overtime = playersOnThrone != 1;
+        overtime |= playersOnThrone != 1;
         overtime |= this.config.deathmatch && alivePlayers > 1;
 
         KothStageManager.TickResult result = this.stageManager.tick(time, gameSpace, overtime, this.gameFinished);

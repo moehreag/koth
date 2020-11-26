@@ -1,16 +1,17 @@
 {
   "type": "koth:koth",
-  "name": "KotH: Cotton Candy (Leap)",
+  "name": "KotH: Stack",
   "map": {
-    "id": "koth:cotton_candy",
-    "spawn_angle": 180
+    "id": "koth:stack",
+    "spawn_angle": 50,
+    "time": 12300
   },
   "winner_takes_all": false,
   "players": {
     "min": 1,
     "max": 100
   },
-  "time_limit_secs": 150,
+  "time_limit_secs": 170,
   "has_feather": true,
   "has_stick": true
 }
