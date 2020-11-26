@@ -20,6 +20,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
@@ -36,6 +37,7 @@ import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
+import xyz.nucleoid.plasmid.util.PlayerRef;
 import xyz.nucleoid.plasmid.widget.GlobalWidgets;
 
 import java.util.*;
@@ -122,8 +124,16 @@ public class KothActive {
     }
 
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
+        KothPlayer participant = this.participants.get(player);
+
+        if (participant != null && source.getAttacker() != null && source.getAttacker() instanceof ServerPlayerEntity) {
+            long time = this.gameSpace.getWorld().getTime();
+            PlayerRef attacker = PlayerRef.of((ServerPlayerEntity) source.getAttacker());
+            participant.lastTimeWasAttacked = new AttackRecord(attacker, time);
+        }
+
         if (!player.isSpectator() && source.isFire()) {
-            this.spawnDeadParticipant(player, this.gameSpace.getWorld().getTime());
+            this.spawnDeadParticipant(player, source, this.gameSpace.getWorld().getTime());
         }
 
         if (!this.pvpEnabled || (this.config.spawnInvuln && this.gameMap.noPvp.contains(player.getBlockPos()))) {
@@ -204,7 +214,7 @@ public class KothActive {
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-        this.spawnDeadParticipant(player, this.gameSpace.getWorld().getTime());
+        this.spawnDeadParticipant(player, source, this.gameSpace.getWorld().getTime());
         return ActionResult.FAIL;
     }
 
@@ -231,14 +241,30 @@ public class KothActive {
         return TypedActionResult.pass(ItemStack.EMPTY);
     }
 
-    private void spawnDeadParticipant(ServerPlayerEntity player, long time) {
+    private void spawnDeadParticipant(ServerPlayerEntity player, DamageSource damageSource, long time) {
         this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR);
 
         Inventories.remove(player.inventory, it -> it.getItem() == Items.BOW, 1, false);
+        KothPlayer participant = this.participants.get(player);
+        ServerWorld world = this.gameSpace.getWorld();
 
         if (this.config.deathmatch) {
             PlayerSet players = this.gameSpace.getPlayers();
-            players.sendMessage(player.getDisplayName().shallowCopy().append(" has been eliminated!").formatted(Formatting.GOLD));
+            MutableText eliminationMessage = new LiteralText(" has been eliminated by ");
+
+            if (damageSource.getAttacker() != null) {
+                eliminationMessage.append(damageSource.getAttacker().getDisplayName());
+            } else if (participant != null && participant.attacker(time, world) != null) {
+                eliminationMessage.append(participant.attacker(time, world).getDisplayName());
+            } else if (damageSource.isFire()) {
+                eliminationMessage.append("taking a swim in lava!");
+            } else if (damageSource.isOutOfWorld()) {
+                eliminationMessage.append("staring into the abyss!");
+            } else {
+                eliminationMessage = new LiteralText(" has been eliminated!");
+            }
+
+            players.sendMessage(player.getDisplayName().shallowCopy().append(eliminationMessage).formatted(Formatting.GOLD));
             players.sendSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP);
         } else {
             this.participants.get(player).deadTime = time;
@@ -265,7 +291,7 @@ public class KothActive {
             arrow.remove();
         }
 
-        boolean overtime = false;
+        boolean overtime;
         int alivePlayers = 0;
         int playersOnThrone = 0;
 
@@ -334,7 +360,7 @@ public class KothActive {
                 if (player.isSpectator()) {
                     this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR);
                 } else if (!justAbove) {
-                    this.spawnDeadParticipant(player, time);
+                    this.spawnDeadParticipant(player, DamageSource.OUT_OF_WORLD, time);
                 }
             }
 
