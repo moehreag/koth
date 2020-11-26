@@ -71,6 +71,7 @@ public class KothWaiting {
 
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
         if (source.isFire()) {
+            System.out.println("Player.isInLava() = " + player.isInLava());
             System.out.println("Spawning player due to being on fire");
             this.spawnPlayer(player);
         }
