@@ -63,6 +63,7 @@ public class KothSpawnLogic {
             }
         }
 
+        System.out.println("Position is now " + player.getX() + " " + player.getY() + " " + player.getZ());
         System.out.println("Successfully spawned player at " + x + " " + y + " " + z);
 
         player.teleport(world, x, y, z, this.map.spawnAngle, 0.0F);
