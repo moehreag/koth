@@ -29,15 +29,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.event.GameCloseListener;
-import xyz.nucleoid.plasmid.game.event.GameOpenListener;
-import xyz.nucleoid.plasmid.game.event.GameTickListener;
-import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
-import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDamageListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
-import xyz.nucleoid.plasmid.game.event.PlayerRemoveListener;
-import xyz.nucleoid.plasmid.game.event.UseItemListener;
+import xyz.nucleoid.plasmid.game.event.*;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
@@ -46,13 +38,7 @@ import xyz.nucleoid.plasmid.util.BlockBounds;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 import xyz.nucleoid.plasmid.widget.GlobalWidgets;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class KothActive {
@@ -265,6 +251,7 @@ public class KothActive {
     }
 
     private void spawnParticipant(ServerPlayerEntity player) {
+        System.out.println("Spawning participant");
         if (this.config.hasBow && !player.inventory.containsAny(new HashSet<>(Collections.singletonList(Items.BOW)))) {
             this.maybeGiveBow(player);
         }
@@ -274,6 +261,7 @@ public class KothActive {
     }
 
     private void spawnSpectator(ServerPlayerEntity player) {
+        System.out.println("Spawning spectator");
         this.spawnLogic.resetPlayer(player, GameMode.SPECTATOR);
         this.spawnLogic.spawnPlayer(player);
     }
@@ -353,6 +341,7 @@ public class KothActive {
                 boolean justAbove = player.getY() > max.getY() && bounds.contains(playerBoundedY);
 
                 if (player.isSpectator()) {
+                    System.out.println("Spawning spectator due to being out of bounds");
                     this.spawnLogic.spawnPlayer(player);
                 } else if (!justAbove) {
                     System.out.println("Spawning dead participant due to being out of bounds");

@@ -8,17 +8,8 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.fantasy.BubbleWorldConfig;
-import xyz.nucleoid.plasmid.game.GameOpenContext;
-import xyz.nucleoid.plasmid.game.GameOpenException;
-import xyz.nucleoid.plasmid.game.GameOpenProcedure;
-import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.GameWaitingLobby;
-import xyz.nucleoid.plasmid.game.StartResult;
-import xyz.nucleoid.plasmid.game.event.GameTickListener;
-import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDamageListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
-import xyz.nucleoid.plasmid.game.event.RequestStartListener;
+import xyz.nucleoid.plasmid.game.*;
+import xyz.nucleoid.plasmid.game.event.*;
 
 public class KothWaiting {
     private final GameSpace gameSpace;
@@ -62,6 +53,7 @@ public class KothWaiting {
     private void tick() {
         for (ServerPlayerEntity player : this.gameSpace.getWorld().getPlayers()) {
             if (!this.map.bounds.contains(player.getBlockPos())) {
+                System.out.println("Spawning player due to being outside bounds");
                 this.spawnPlayer(player);
             }
         }
@@ -73,11 +65,13 @@ public class KothWaiting {
     }
 
     private void addPlayer(ServerPlayerEntity player) {
+        System.out.println("Spawning player due to joining the game");
         this.spawnPlayer(player);
     }
 
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
         if (source.isFire()) {
+            System.out.println("Spawning player due to being on fire");
             this.spawnPlayer(player);
         }
 
@@ -90,6 +84,7 @@ public class KothWaiting {
     }
 
     private void spawnPlayer(ServerPlayerEntity player) {
+        System.out.println("Spawning player");
         this.spawnLogic.resetPlayer(player, GameMode.ADVENTURE);
         this.spawnLogic.spawnPlayer(player);
     }

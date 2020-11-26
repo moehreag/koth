@@ -1,7 +1,9 @@
 package io.github.restioson.koth.game;
 
+import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket.Flag;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -14,6 +16,7 @@ import xyz.nucleoid.plasmid.game.GameSpace;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public class KothStageManager {
     private final KothConfig config;
@@ -132,7 +135,15 @@ public class KothStageManager {
                     state.lastPos = player.getPos();
                 }
 
-                player.teleport(state.lastPos.x, state.lastPos.y, state.lastPos.z);
+                double destX = state.lastPos.x;
+                double destY = state.lastPos.y;
+                double destZ = state.lastPos.z;
+
+                // Set X and Y as relative so it will send 0 change when we pass yaw (yaw - yaw = 0) and pitch
+                Set<Flag> flags = ImmutableSet.of(Flag.X_ROT, Flag.Y_ROT);
+
+                // Teleport without changing the pitch and yaw
+                player.networkHandler.teleportRequest(destX, destY, destZ, player.yaw, player.pitch, flags);
             }
         }
 
