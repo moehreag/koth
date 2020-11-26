@@ -42,7 +42,6 @@ public class KothSpawnLogic {
     }
 
     private void spawnPlayer(ServerPlayerEntity player) {
-        System.out.println("Spawning player");
         ServerWorld world = this.gameSpace.getWorld();
 
         BlockBounds bounds = this.map.spawn;
@@ -62,18 +61,9 @@ public class KothSpawnLogic {
             validSpawn = (!world.getBlockState(new BlockPos(x, min.getY(), z)).isAir()) ||
                     (!world.getBlockState(new BlockPos(x, min.getY() - 1, z)).isAir()) ||
                     (!world.getBlockState(new BlockPos(x, min.getY() - 2, z)).isAir());
-
-            if (!validSpawn) {
-                System.out.println("Invalid spawn " + x + " " + (min.getY()) + " " + z + " ");
-            }
         }
-
-        System.out.println("Position is now " + player.getX() + " " + player.getY() + " " + player.getZ());
-        System.out.println("Successfully spawned player at " + x + " " + y + " " + z);
 
         player.teleport(world, x, y, z, this.map.spawnAngle, 0.0F);
         player.networkHandler.syncWithPlayerPosition();
-
-        System.out.println("Position is now " + player.getX() + " " + player.getY() + " " + player.getZ());
     }
 }

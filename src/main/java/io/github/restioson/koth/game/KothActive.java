@@ -123,7 +123,6 @@ public class KothActive {
 
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
         if (!player.isSpectator() && source.isFire()) {
-            System.out.println("Spawning dead participant due to fire");
             this.spawnDeadParticipant(player, this.gameSpace.getWorld().getTime());
         }
 
@@ -206,7 +205,6 @@ public class KothActive {
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-        System.out.println("Spawning dead participant due to death");
         this.spawnDeadParticipant(player, this.gameSpace.getWorld().getTime());
         return ActionResult.FAIL;
     }
@@ -235,7 +233,6 @@ public class KothActive {
     }
 
     private void spawnDeadParticipant(ServerPlayerEntity player, long time) {
-        System.out.println("Spawning dead participant");
         this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR);
 
         Inventories.remove(player.inventory, it -> it.getItem() == Items.BOW, 1, false);
@@ -250,7 +247,6 @@ public class KothActive {
     }
 
     private void spawnParticipant(ServerPlayerEntity player) {
-        System.out.println("Spawning participant");
         if (this.config.hasBow && !player.inventory.containsAny(new HashSet<>(Collections.singletonList(Items.BOW)))) {
             this.maybeGiveBow(player);
         }
@@ -259,7 +255,6 @@ public class KothActive {
     }
 
     private void spawnSpectator(ServerPlayerEntity player) {
-        System.out.println("Spawning spectator");
         this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR);
     }
 
@@ -338,10 +333,8 @@ public class KothActive {
                 boolean justAbove = player.getY() > max.getY() && bounds.contains(playerBoundedY);
 
                 if (player.isSpectator()) {
-                    System.out.println("Spawning spectator due to being out of bounds");
                     this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR);
                 } else if (!justAbove) {
-                    System.out.println("Spawning dead participant due to being out of bounds");
                     this.spawnDeadParticipant(player, time);
                 }
             }

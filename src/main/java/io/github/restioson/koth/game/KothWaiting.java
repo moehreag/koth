@@ -53,7 +53,6 @@ public class KothWaiting {
     private void tick() {
         for (ServerPlayerEntity player : this.gameSpace.getWorld().getPlayers()) {
             if (!this.map.bounds.contains(player.getBlockPos())) {
-                System.out.println("Spawning player due to being outside bounds");
                 this.spawnPlayer(player);
             }
         }
@@ -65,14 +64,11 @@ public class KothWaiting {
     }
 
     private void addPlayer(ServerPlayerEntity player) {
-        System.out.println("Spawning player due to joining the game");
         this.spawnPlayer(player);
     }
 
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
         if (source.isFire()) {
-            System.out.println("Player.isInLava() = " + player.isInLava());
-            System.out.println("Spawning player due to being on fire");
             this.spawnPlayer(player);
         }
 
@@ -85,7 +81,6 @@ public class KothWaiting {
     }
 
     private void spawnPlayer(ServerPlayerEntity player) {
-        System.out.println("Spawning player");
         this.spawnLogic.resetAndRespawn(player, GameMode.ADVENTURE);
     }
 }
