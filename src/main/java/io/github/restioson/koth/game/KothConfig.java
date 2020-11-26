@@ -57,15 +57,18 @@ public class KothConfig {
     public static class MapConfig {
         public static final Codec<MapConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 Identifier.CODEC.fieldOf("id").forGetter(config -> config.id),
-                Codec.INT.fieldOf("spawn_angle").forGetter(config -> config.spawnAngle)
+                Codec.INT.fieldOf("spawn_angle").forGetter(config -> config.spawnAngle),
+                Codec.LONG.optionalFieldOf("time", 6000L).forGetter(config -> config.time)
         ).apply(instance, MapConfig::new));
 
         public final Identifier id;
         public final int spawnAngle;
+        public final long time;
 
-        public MapConfig(Identifier id, int spawnAngle) {
+        public MapConfig(Identifier id, int spawnAngle, long time) {
             this.id = id;
             this.spawnAngle = spawnAngle;
+            this.time = time;
         }
     }
 }

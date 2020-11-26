@@ -47,6 +47,7 @@ public class KothWaiting {
             game.on(PlayerAddListener.EVENT, waiting::addPlayer);
             game.on(PlayerDamageListener.EVENT, waiting::onPlayerDamage);
             game.on(PlayerDeathListener.EVENT, waiting::onPlayerDeath);
+            worldConfig.setTimeOfDay(config.map.time);
         });
     }
 

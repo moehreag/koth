@@ -3,7 +3,8 @@
   "name": "KotH: Stack",
   "map": {
     "id": "koth:stack",
-    "spawn_angle": 50
+    "spawn_angle": 50,
+    "time": 12300
   },
   "winner_takes_all": false,
   "players": {
