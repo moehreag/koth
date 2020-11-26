@@ -21,7 +21,12 @@ public class KothSpawnLogic {
         this.map = map;
     }
 
-    public void resetPlayer(ServerPlayerEntity player, GameMode gameMode) {
+    public void resetAndRespawn(ServerPlayerEntity player, GameMode gameMode) {
+        this.resetPlayer(player, gameMode);
+        this.spawnPlayer(player);
+    }
+
+    private void resetPlayer(ServerPlayerEntity player, GameMode gameMode) {
         player.setGameMode(gameMode);
         player.setVelocity(Vec3d.ZERO);
         player.fallDistance = 0.0f;
@@ -36,7 +41,7 @@ public class KothSpawnLogic {
         ));
     }
 
-    public void spawnPlayer(ServerPlayerEntity player) {
+    private void spawnPlayer(ServerPlayerEntity player) {
         System.out.println("Spawning player");
         ServerWorld world = this.gameSpace.getWorld();
 
@@ -67,6 +72,7 @@ public class KothSpawnLogic {
         System.out.println("Successfully spawned player at " + x + " " + y + " " + z);
 
         player.teleport(world, x, y, z, this.map.spawnAngle, 0.0F);
+        player.networkHandler.syncWithPlayerPosition();
 
         System.out.println("Position is now " + player.getX() + " " + player.getY() + " " + player.getZ());
     }

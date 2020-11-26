@@ -86,7 +86,6 @@ public class KothWaiting {
 
     private void spawnPlayer(ServerPlayerEntity player) {
         System.out.println("Spawning player");
-        this.spawnLogic.resetPlayer(player, GameMode.ADVENTURE);
-        this.spawnLogic.spawnPlayer(player);
+        this.spawnLogic.resetAndRespawn(player, GameMode.ADVENTURE);
     }
 }

@@ -236,8 +236,7 @@ public class KothActive {
 
     private void spawnDeadParticipant(ServerPlayerEntity player, long time) {
         System.out.println("Spawning dead participant");
-        this.spawnLogic.resetPlayer(player, GameMode.SPECTATOR);
-        this.spawnLogic.spawnPlayer(player);
+        this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR);
 
         Inventories.remove(player.inventory, it -> it.getItem() == Items.BOW, 1, false);
 
@@ -256,14 +255,12 @@ public class KothActive {
             this.maybeGiveBow(player);
         }
 
-        this.spawnLogic.resetPlayer(player, GameMode.ADVENTURE);
-        this.spawnLogic.spawnPlayer(player);
+        this.spawnLogic.resetAndRespawn(player, GameMode.ADVENTURE);
     }
 
     private void spawnSpectator(ServerPlayerEntity player) {
         System.out.println("Spawning spectator");
-        this.spawnLogic.resetPlayer(player, GameMode.SPECTATOR);
-        this.spawnLogic.spawnPlayer(player);
+        this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR);
     }
 
     private void tick() {
@@ -342,7 +339,7 @@ public class KothActive {
 
                 if (player.isSpectator()) {
                     System.out.println("Spawning spectator due to being out of bounds");
-                    this.spawnLogic.spawnPlayer(player);
+                    this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR);
                 } else if (!justAbove) {
                     System.out.println("Spawning dead participant due to being out of bounds");
                     this.spawnDeadParticipant(player, time);
