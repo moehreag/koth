@@ -64,6 +64,7 @@ public class KothActive {
     private final Object2ObjectMap<ServerPlayerEntity, KothPlayer> participants;
     private final KothSpawnLogic spawnLogic;
     private final KothStageManager stageManager;
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType") // i like ifPresent
     private final Optional<KothTimerBar> timerBar;
     private final KothScoreboard scoreboard;
     private OvertimeState overtimeState = OvertimeState.NOT_IN_OVERTIME;
@@ -136,6 +137,7 @@ public class KothActive {
 
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float value) {
         if (!player.isSpectator() && source.isFire()) {
+            System.out.println("Spawning dead participant due to fire");
             this.spawnDeadParticipant(player, this.gameSpace.getWorld().getTime());
         }
 
@@ -218,6 +220,7 @@ public class KothActive {
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
+        System.out.println("Spawning dead participant due to death");
         this.spawnDeadParticipant(player, this.gameSpace.getWorld().getTime());
         return ActionResult.FAIL;
     }
@@ -246,6 +249,7 @@ public class KothActive {
     }
 
     private void spawnDeadParticipant(ServerPlayerEntity player, long time) {
+        System.out.println("Spawning dead participant");
         this.spawnLogic.resetPlayer(player, GameMode.SPECTATOR);
         this.spawnLogic.spawnPlayer(player);
 
@@ -351,6 +355,7 @@ public class KothActive {
                 if (player.isSpectator()) {
                     this.spawnLogic.spawnPlayer(player);
                 } else if (!justAbove) {
+                    System.out.println("Spawning dead participant due to being out of bounds");
                     this.spawnDeadParticipant(player, time);
                 }
             }

@@ -37,6 +37,7 @@ public class KothSpawnLogic {
     }
 
     public void spawnPlayer(ServerPlayerEntity player) {
+        System.out.println("Spawning player");
         ServerWorld world = this.gameSpace.getWorld();
 
         BlockBounds bounds = this.map.spawn;
