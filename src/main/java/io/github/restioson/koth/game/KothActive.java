@@ -160,7 +160,6 @@ public class KothActive {
             }
 
             if (this.config.hasBow) {
-                this.maybeGiveBow(player);
                 ItemStack arrow = ItemStackBuilder.of(Items.ARROW)
                         .addLore(new LiteralText("It seems to always come back to me..."))
                         .build();
