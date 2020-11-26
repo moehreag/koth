@@ -58,9 +58,12 @@ public class KothSpawnLogic {
                     (!world.getBlockState(new BlockPos(x, min.getY() - 1, z)).isAir()) ||
                     (!world.getBlockState(new BlockPos(x, min.getY() - 2, z)).isAir());
 
-            System.out.println("Invalid spawn " + x + " " + (min.getY()) + " " + z + " ");
+            if (!validSpawn) {
+                System.out.println("Invalid spawn " + x + " " + (min.getY()) + " " + z + " ");
+            }
         }
 
+        System.out.println("Successfully spawned player at " + x + " " + y + " " + z);
 
         player.teleport(world, x, y, z, this.map.spawnAngle, 0.0F);
     }
