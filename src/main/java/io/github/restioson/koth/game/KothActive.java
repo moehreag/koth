@@ -14,7 +14,6 @@ import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -326,7 +325,7 @@ public class KothActive {
             case OVERTIME:
                 if (this.overtimeState == OvertimeState.NOT_IN_OVERTIME) {
                     this.overtimeState = OvertimeState.IN_OVERTIME;
-                    KothActive.broadcastTitle(new LiteralText("Overtime!"), this.gameSpace);
+                    this.gameSpace.getPlayers().sendTitle(new LiteralText("Overtime!"));
                     this.timerBar.ifPresent(KothTimerBar::setOvertime);
                 } else if (this.overtimeState == OvertimeState.JUST_ENTERED_OVERTIME) {
                     this.overtimeState = OvertimeState.IN_OVERTIME;
@@ -418,14 +417,6 @@ public class KothActive {
                 .sorted(Comparator.comparingInt(player -> -player.score)) // Descending sort
                 .limit(5)
                 .collect(Collectors.toList());
-    }
-
-
-    protected static void broadcastTitle(Text message, GameSpace space) {
-        for (ServerPlayerEntity player : space.getPlayers()) {
-            TitleS2CPacket packet = new TitleS2CPacket(TitleS2CPacket.Action.TITLE, message, 1, 5,  3);
-            player.networkHandler.sendPacket(packet);
-        }
     }
 
     private void broadcastWin(ServerPlayerEntity winner) {

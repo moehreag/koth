@@ -12,6 +12,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
 import xyz.nucleoid.plasmid.game.GameSpace;
+import xyz.nucleoid.plasmid.game.player.PlayerSet;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -147,17 +148,20 @@ public class KothStageManager {
             }
         }
 
-        int sec = (int) Math.floor(sec_f) - 1;
+        int sec = (int) Math.floor(sec_f) - 1; // -1 because of "Go"
 
+        PlayerSet players = space.getPlayers();
         if ((this.startTime - time) % 20 == 0) {
             if (sec > 0) {
-                KothActive.broadcastTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD), space);
-                space.getPlayers().sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 1.0F);
+                players.sendTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD));
+                players.sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 1.0F);
             } else {
-                KothActive.broadcastTitle(new LiteralText("Go!").formatted(Formatting.BOLD), space);
-                space.getPlayers().sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 2.0F);
+                players.sendTitle(new LiteralText("Go!").formatted(Formatting.BOLD));
+                players.sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 2.0F);
             }
         }
+
+        // 20 more ticks of invulnerability after this
     }
 
     public static class FrozenPlayer {
