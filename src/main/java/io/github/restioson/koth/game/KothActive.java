@@ -10,7 +10,9 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.ItemCooldownManager;
 import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.inventory.Inventories;
+import net.minecraft.item.ArrowItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
@@ -119,6 +121,7 @@ public class KothActive {
 
             game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
             game.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
+            game.on(PlayerFireArrowListener.EVENT, active::onPlayerFireArrow);
         });
     }
 
@@ -238,6 +241,20 @@ public class KothActive {
         }
 
         return TypedActionResult.pass(ItemStack.EMPTY);
+    }
+
+    private ActionResult onPlayerFireArrow(
+            ServerPlayerEntity user,
+            ItemStack tool,
+            ArrowItem arrowItem,
+            int ticks,
+            PersistentProjectileEntity projectile
+    ) {
+        if (this.gameMap.spawn.contains(user.getBlockPos()) && this.config.spawnInvuln) {
+            return ActionResult.FAIL;
+        } else {
+            return ActionResult.PASS;
+        }
     }
 
     private void spawnDeadParticipant(ServerPlayerEntity player, DamageSource damageSource, long time) {
