@@ -1,13 +1,12 @@
 {
   "type": "koth:koth",
-  "name": "KotH: Cotton Candy (Leap)",
+  "name": "KotH: Cotton Candy (Leaping)",
   "map": {
     "id": "koth:cotton_candy",
     "spawn_angle": 180
   },
-  "winner_takes_all": false,
   "players": {
-    "min": 1,
+    "min": 2,
     "max": 100
   },
   "time_limit_secs": 150,

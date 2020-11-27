@@ -7,7 +7,7 @@
   },
   "winner_takes_all": true,
   "players": {
-    "min": 1,
+    "min": 2,
     "max": 100
   },
   "time_limit_secs": 150
