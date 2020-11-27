@@ -340,7 +340,7 @@ public class KothActive {
                 this.pvpEnabled = false;
             case TICK_FINISHED:
                 return;
-            case GAME_FINISHED:
+            case ROUND_FINISHED:
                 this.broadcastWin(this.getWinner());
                 return;
             case GAME_CLOSED:
@@ -420,9 +420,30 @@ public class KothActive {
     }
 
     private void broadcastWin(ServerPlayerEntity winner) {
+        PlayerSet players = this.gameSpace.getPlayers();
         KothPlayer participant = this.participants.get(winner);
-        participant.wins++;
+
+        if (participant != null) {
+            participant.wins++;
+        }
+
         String wonThe;
+
+        if (participant == null && this.config.firstTo == 1) {
+            wonThe = "game";
+            this.gameFinished = true;
+        } else if (participant != null && participant.wins == this.config.firstTo) {
+            wonThe = "game";
+            this.gameFinished = true;
+        } else {
+            wonThe = "round";
+        }
+
+        if (winner == null) {
+            players.sendMessage(new LiteralText("The ").append(wonThe).append(" ended, but nobody won!").formatted(Formatting.GOLD));
+            players.sendSound(SoundEvents.ENTITY_VILLAGER_NO);
+            return;
+        }
 
         if (this.config.deathmatch) {
             List<KothPlayer> top = this.participants.values().stream()
@@ -432,16 +453,9 @@ public class KothActive {
             this.scoreboard.render(top);
         }
 
-        if (participant.wins == this.config.firstTo) {
-            wonThe = "game";
-            this.gameFinished = true;
-        } else {
-            wonThe = "round";
-        }
 
         Text message = winner.getDisplayName().shallowCopy().append(" has won the ").append(wonThe).append("!").formatted(Formatting.GOLD);
 
-        PlayerSet players = this.gameSpace.getPlayers();
         players.sendMessage(message);
         players.sendSound(SoundEvents.ENTITY_VILLAGER_YES);
     }
@@ -453,6 +467,9 @@ public class KothActive {
                     return player;
                 }
             }
+
+            // No players are alive
+            return null;
         }
 
         Map.Entry<ServerPlayerEntity, KothPlayer> winner = null;

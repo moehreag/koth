@@ -112,9 +112,12 @@ public class KothStageManager {
         if (time > this.finishTime || noPlayers) {
             if (!overtime) {
                 this.closeTime = time + (2 * 20);
-                return TickResult.GAME_FINISHED;
+                return TickResult.ROUND_FINISHED;
             } else if (!this.config.deathmatch) {
                 return TickResult.OVERTIME;
+            } else if (noPlayers) { // Both eliminated at once
+                this.closeTime = time + (2 * 20);
+                return TickResult.ROUND_FINISHED;
             }
         }
 
@@ -173,7 +176,7 @@ public class KothStageManager {
         TICK_FINISHED,
         TICK_FINISHED_PLAYERS_FROZEN,
         NEXT_ROUND,
-        GAME_FINISHED,
+        ROUND_FINISHED,
         GAME_CLOSED,
         OVERTIME,
     }
