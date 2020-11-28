@@ -1,0 +1,14 @@
+{
+  "type": "koth:koth",
+  "name": "KotH: Buttons",
+  "map": {
+    "id": "koth:buttons",
+    "spawn_angle": 180
+  },
+  "players": {
+    "min": 2,
+    "max": 100
+  },
+  "time_limit_secs": 150,
+  "has_bow": true
+}
