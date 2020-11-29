@@ -280,7 +280,7 @@ public class KothActive {
                 eliminationMessage = new LiteralText(" has been eliminated!");
             }
 
-            players.sendMessage(player.getDisplayName().shallowCopy().append(eliminationMessage).formatted(Formatting.GOLD));
+            players.sendMessage(new LiteralText("").append(player.getDisplayName()).append(eliminationMessage).formatted(Formatting.GOLD));
             players.sendSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP);
         } else {
             this.participants.get(player).deadTime = time;

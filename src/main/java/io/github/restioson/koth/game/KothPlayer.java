@@ -1,5 +1,6 @@
 package io.github.restioson.koth.game;
 
+import jdk.internal.jline.internal.Nullable;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 
@@ -8,6 +9,7 @@ public class KothPlayer {
     public int score = 0;
     public int wins = 0;
     public final ServerPlayerEntity player;
+    @Nullable
     public AttackRecord lastTimeWasAttacked;
 
     public KothPlayer(ServerPlayerEntity player) {
