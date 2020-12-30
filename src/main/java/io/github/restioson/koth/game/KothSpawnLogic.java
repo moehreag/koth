@@ -52,7 +52,6 @@ public class KothSpawnLogic {
 
         double x = 0;
         double z = 0;
-        double y = min.getY() + 0.5;
 
         while (!validSpawn) {
             x = MathHelper.nextDouble(player.getRandom(), min.getX(), max.getX());
@@ -63,7 +62,7 @@ public class KothSpawnLogic {
                     (!world.getBlockState(new BlockPos(x, min.getY() - 2, z)).isAir());
         }
 
-        player.teleport(world, x, y, z, this.map.spawnAngle, 0.0F);
+        player.teleport(world, x, min.getY(), z, this.map.spawnAngle, 0.0F);
         player.networkHandler.syncWithPlayerPosition();
     }
 }
