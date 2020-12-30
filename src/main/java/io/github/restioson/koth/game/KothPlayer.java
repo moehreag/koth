@@ -1,8 +1,8 @@
 package io.github.restioson.koth.game;
 
-import jdk.internal.jline.internal.Nullable;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import org.jetbrains.annotations.Nullable;
 
 public class KothPlayer {
     public long deadTime = -1;
