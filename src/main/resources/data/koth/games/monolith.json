@@ -1,0 +1,14 @@
+{
+  "type": "koth:koth",
+  "map": {
+    "id": "koth:monolith",
+    "spawn_angle": 180
+  },
+  "winner_takes_all": false,
+  "players": {
+    "min": 1,
+    "max": 35
+  },
+  "time_limit_secs": 135,
+  "has_stick": true
+}
