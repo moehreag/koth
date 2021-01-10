@@ -44,6 +44,10 @@ public class KothStageManager {
         if (config.deathmatch) {
             line1 = "King of the Hill Deathmatch! - knock off other players and stay on the platform!";
             line2 = "The last player standing wins!";
+        } else if (config.knockoff) {
+            line1 = "King of the Hill Knock Off! - knock off other players and stay on the platform!";
+            line2 = "Score points by knocking everyone from the platform!\n" +
+                    "First player with " + config.firstTo + " points wins!";
         } else if (!config.winnerTakesAll) {
             line2 = "Score points by staying on top of the hill. Whoever reigns longest wins!\n" +
                     "If someone who is not the point-score leader is on the throne by the end, then the game will enter\n" +
@@ -56,7 +60,7 @@ public class KothStageManager {
         List<String> lines = new ArrayList<>();
         Collections.addAll(lines, line1, line2);
 
-        if (this.config.firstTo != 1) {
+        if (this.config.firstTo != 1 && !this.config.knockoff) {
             lines.add("The game's winner will be whoever wins " + this.config.firstTo + " rounds first.");
         }
 
@@ -94,6 +98,11 @@ public class KothStageManager {
             return TickResult.TICK_FINISHED;
         }
 
+        if (this.config.knockoff && gameFinished && this.closeTime == -1) {
+            this.closeTime = time + (4 * 20);
+            return TickResult.ROUND_FINISHED;
+        }
+
         boolean noPlayers = space.getPlayerCount() == 0;
         if (this.config.deathmatch) {
             int remainingPlayers = 0;
@@ -113,7 +122,7 @@ public class KothStageManager {
             if (!overtime) {
                 this.closeTime = time + (2 * 20);
                 return TickResult.ROUND_FINISHED;
-            } else if (!this.config.deathmatch) {
+            } else if (!this.config.deathmatch && !this.config.knockoff) {
                 return TickResult.OVERTIME;
             } else if (noPlayers) { // Both eliminated at once
                 this.closeTime = time + (2 * 20);
