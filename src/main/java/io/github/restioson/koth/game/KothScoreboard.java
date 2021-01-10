@@ -11,13 +11,15 @@ public class KothScoreboard implements AutoCloseable {
     private final SidebarWidget sidebar;
     private final boolean winnerTakesAll;
     private final boolean deathMatch;
+    private final boolean knockoff;
 
-    public KothScoreboard(GlobalWidgets widgets, String name, boolean wta, boolean dm) {
+    public KothScoreboard(GlobalWidgets widgets, String name, boolean wta, boolean dm, boolean ko) {
         this.sidebar = widgets.addSidebar(
                 new LiteralText(name).formatted(Formatting.BLUE, Formatting.BOLD)
         );
         this.winnerTakesAll = wta;
         this.deathMatch = dm;
+        this.knockoff = ko;
     }
 
     public void renderTitle() {
@@ -39,6 +41,14 @@ public class KothScoreboard implements AutoCloseable {
                             entry.player.getEntityName(),
                             Formatting.RESET,
                             entry.wins
+                    );
+                } else if (this.knockoff) {
+                    line = String.format(
+                            "%s%s%s: %d points",
+                            Formatting.AQUA,
+                            entry.player.getEntityName(),
+                            Formatting.RESET,
+                            entry.score
                     );
                 } else {
                     line = String.format(

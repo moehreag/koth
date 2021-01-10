@@ -78,15 +78,17 @@ public class KothActive {
             name = "Deathmatch!";
         } else if (config.winnerTakesAll) {
             name = "Winner Takes All";
+        } else if (config.knockoff) {
+            name = "Knock everyone off arena!";
         } else {
             name = "Longest-reigning Ruler";
         }
 
-        this.scoreboard = new KothScoreboard(widgets, name, this.config.winnerTakesAll, this.config.deathmatch);
+        this.scoreboard = new KothScoreboard(widgets, name, this.config.winnerTakesAll, this.config.deathmatch, this.config.knockoff);
 
         this.stageManager = new KothStageManager(config);
 
-        if (this.config.deathmatch) {
+        if (this.config.deathmatch || this.config.knockoff) {
             this.timerBar = Optional.empty();
         } else {
             this.timerBar = Optional.of(new KothTimerBar());
@@ -282,6 +284,18 @@ public class KothActive {
 
             players.sendMessage(new LiteralText("").append(player.getDisplayName()).append(eliminationMessage).formatted(Formatting.GOLD));
             players.sendSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP);
+        } else if (this.config.knockoff && !this.gameFinished) {
+            KothPlayer attacker = this.participants.get(participant.attacker(time, world));
+            if (attacker != null) {
+                attacker.score += 1;
+                attacker.player.addExperienceLevels(1);
+                attacker.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
+                if (attacker.score >= this.config.firstTo) {
+                    this.gameFinished = true;
+                    this.stageManager.finishTime = this.gameSpace.getWorld().getTime();
+
+                }
+            }
         } else {
             this.participants.get(player).deadTime = time;
         }
@@ -331,6 +345,7 @@ public class KothActive {
 
         overtime |= playersOnThrone != 1;
         overtime |= this.config.deathmatch && alivePlayers > 1;
+        overtime |= this.config.knockoff;
 
         KothStageManager.TickResult result = this.stageManager.tick(time, gameSpace, overtime, this.gameFinished);
 
@@ -403,6 +418,9 @@ public class KothActive {
                         .collect(Collectors.toList());
                 this.scoreboard.render(top);
                 continue;
+            } else if (this.config.knockoff) {
+                this.scoreboard.render(this.buildLeaderboard());
+                continue;
             }
 
             if (this.gameMap.throne.toBox().intersects(player.getBoundingBox()) && time % 20 == 0) {
@@ -449,7 +467,7 @@ public class KothActive {
         if (participant == null && this.config.firstTo == 1) {
             wonThe = "game";
             this.gameFinished = true;
-        } else if (participant != null && participant.wins == this.config.firstTo) {
+        } else if (participant != null && (participant.wins == this.config.firstTo || this.config.knockoff)) {
             wonThe = "game";
             this.gameFinished = true;
         } else {
@@ -497,6 +515,10 @@ public class KothActive {
                 }
 
                 if (winner == null || winner.getKey().getBlockPos().getY() < entry.getKey().getBlockPos().getY() ) {
+                    winner = entry;
+                }
+            } else if (this.config.knockoff) {
+                if (winner == null || entry.getValue().score >= this.config.firstTo ) {
                     winner = entry;
                 }
             } else {
