@@ -67,7 +67,7 @@ public class KothActive {
         this.config = config;
         this.gameMap = map;
         this.stageManager = new KothStageManager(config);
-        this.spawnLogic = new KothSpawnLogic(gameSpace, map, this.stageManager);
+        this.spawnLogic = new KothSpawnLogic(gameSpace, map);
         this.participants = new Object2ObjectOpenHashMap<>();
 
         for (ServerPlayerEntity player : participants) {
@@ -259,7 +259,7 @@ public class KothActive {
     }
 
     private void spawnDeadParticipant(ServerPlayerEntity player, DamageSource damageSource, long time) {
-        this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR);
+        this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR, this.stageManager);
 
         Inventories.remove(player.inventory, it -> it.getItem() == Items.BOW, 1, false);
         KothPlayer participant = this.participants.get(player);
@@ -305,11 +305,11 @@ public class KothActive {
             this.maybeGiveBow(player);
         }
 
-        this.spawnLogic.resetAndRespawn(player, GameMode.ADVENTURE);
+        this.spawnLogic.resetAndRespawn(player, GameMode.ADVENTURE, this.stageManager);
     }
 
     private void spawnSpectator(ServerPlayerEntity player) {
-        this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR);
+        this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR, this.stageManager);
     }
 
     private void tick() {
@@ -392,7 +392,7 @@ public class KothActive {
                 boolean justAbove = player.getY() > max.getY() && bounds.contains(playerBoundedY);
 
                 if (player.isSpectator()) {
-                    this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR);
+                    this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR, this.stageManager);
                 } else if (!justAbove) {
                     this.spawnDeadParticipant(player, DamageSource.OUT_OF_WORLD, time);
                 }
