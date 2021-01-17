@@ -15,10 +15,12 @@ import xyz.nucleoid.plasmid.util.BlockBounds;
 public class KothSpawnLogic {
     private final GameSpace gameSpace;
     private final KothMap map;
+    private final KothStageManager stageManager;
 
-    public KothSpawnLogic(GameSpace gameSpace, KothMap map) {
+    public KothSpawnLogic(GameSpace gameSpace, KothMap map, KothStageManager stageManager) {
         this.gameSpace = gameSpace;
         this.map = map;
+        this.stageManager = stageManager;
     }
 
     public void resetAndRespawn(ServerPlayerEntity player, GameMode gameMode) {
@@ -64,5 +66,8 @@ public class KothSpawnLogic {
 
         player.teleport(world, x, min.getY(), z, this.map.spawnAngle, 0.0F);
         player.networkHandler.syncWithPlayerPosition();
+
+        KothStageManager.FrozenPlayer state = this.stageManager.frozen.computeIfAbsent(player, p -> new KothStageManager.FrozenPlayer());
+        state.lastPos = player.getPos();
     }
 }

@@ -66,7 +66,8 @@ public class KothActive {
         this.gameSpace = gameSpace;
         this.config = config;
         this.gameMap = map;
-        this.spawnLogic = new KothSpawnLogic(gameSpace, map);
+        this.stageManager = new KothStageManager(config);
+        this.spawnLogic = new KothSpawnLogic(gameSpace, map, this.stageManager);
         this.participants = new Object2ObjectOpenHashMap<>();
 
         for (ServerPlayerEntity player : participants) {
@@ -85,8 +86,6 @@ public class KothActive {
         }
 
         this.scoreboard = new KothScoreboard(widgets, name, this.config.winnerTakesAll, this.config.deathmatch, this.config.knockoff);
-
-        this.stageManager = new KothStageManager(config);
 
         if (this.config.deathmatch || this.config.knockoff) {
             this.timerBar = Optional.empty();
@@ -302,9 +301,6 @@ public class KothActive {
     }
 
     private void spawnParticipant(ServerPlayerEntity player) {
-        KothStageManager.FrozenPlayer state = this.stageManager.frozen.computeIfAbsent(player, p -> new KothStageManager.FrozenPlayer());
-        state.lastPos = player.getPos();
-
         if (this.config.hasBow && !player.inventory.containsAny(new HashSet<>(Collections.singletonList(Items.BOW)))) {
             this.maybeGiveBow(player);
         }
