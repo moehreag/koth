@@ -303,10 +303,7 @@ public class KothActive {
 
     private void spawnParticipant(ServerPlayerEntity player) {
         KothStageManager.FrozenPlayer state = this.stageManager.frozen.computeIfAbsent(player, p -> new KothStageManager.FrozenPlayer());
-
-        if (state.lastPos == null) {
-            state.lastPos = player.getPos();
-        }
+        state.lastPos = player.getPos();
 
         if (this.config.hasBow && !player.inventory.containsAny(new HashSet<>(Collections.singletonList(Items.BOW)))) {
             this.maybeGiveBow(player);
