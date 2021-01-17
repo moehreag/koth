@@ -24,7 +24,7 @@ public class KothStageManager {
     private long closeTime = -1;
     public long finishTime = -1;
     private long startTime = -1;
-    private final Object2ObjectMap<ServerPlayerEntity, FrozenPlayer> frozen;
+    public final Object2ObjectMap<ServerPlayerEntity, FrozenPlayer> frozen;
 
     public KothStageManager(KothConfig config) {
         this.config = config;
