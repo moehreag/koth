@@ -1,0 +1,15 @@
+{
+  "type": "koth:koth",
+  "name": "KotH: Dynasty",
+  "map": {
+    "id": "koth:Dynasty",
+    "spawn_angle": 90,
+    "time": 12300
+  },
+  "players": {
+    "min": 2,
+    "max": 100
+  },
+  "time_limit_secs": 170,
+  "has_stick": true
+}
