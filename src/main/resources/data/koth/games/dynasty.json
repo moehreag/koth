@@ -2,7 +2,7 @@
   "type": "koth:koth",
   "name": "KotH: Dynasty",
   "map": {
-    "id": "koth:Dynasty",
+    "id": "koth:dynasty",
     "spawn_angle": 90,
     "time": 12300
   },
