@@ -1,3 +1,24 @@
 {
-    "game.koth.koth": "KOTH (King of the Hill)"
+  "gameType.koth.koth": "King of the Hill",
+  "gameType.koth.koth.short": "KOTH",
+  "gameType.koth.koth.desc": "In King of the Hill, you must battle other players to stay at the top of the hill!",
+  "game.koth.buttons": "KOTH: Buttons",
+  "game.koth.cotton_candy_scored": "KOTH: Cotton Candy",
+  "game.koth.cotton_candy_scored_bow": "KOTH: Cotton Candy (Bow)",
+  "game.koth.cotton_candy_scored_leap": "KOTH: Cotton Candy (Leaping)",
+  "game.koth.cotton_candy_wta": "KOTH: Cotton Candy (WTA)",
+  "game.koth.deathmatch": "KOTH: Deathmatch",
+  "game.koth.deathmatch_secret": "KOTH: Deathmatch",
+  "game.koth.diamond": "KOTH: Diamond",
+  "game.koth.dynasty": "KOTH: Dynasty",
+  "game.koth.end_city": "KOTH: End City",
+  "game.koth.ice": "KOTH: Ice",
+  "game.koth.ice_knockoff": "KOTH: Ice (Knock Off)",
+  "game.koth.island": "KOTH: Island",
+  "game.koth.monolith": "KOTH: Monolith",
+  "game.koth.skyland": "KOTH: Skyland",
+  "game.koth.squares": "KOTH: Squares",
+  "game.koth.stack": "KOTH: Stack",
+  "game.koth.stack_bow": "KOTH: Stack (Bow)",
+  "game.koth.stack_leap": "KOTH: Stack (Leap)"
 }

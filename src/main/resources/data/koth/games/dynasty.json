@@ -1,6 +1,11 @@
 {
   "type": "koth:koth",
-  "name": "KotH: Dynasty",
+  "icon": {
+    "id": "minecraft:stick", "Count": 1,
+    "Enchantments": [{"id": "minecraft:knockback", "lvl": 1}]
+  },
+  "short_name": "gameType.koth.koth.short",
+  "description": "gameType.koth.koth.desc",
   "map": {
     "id": "koth:dynasty",
     "spawn_angle": 90,

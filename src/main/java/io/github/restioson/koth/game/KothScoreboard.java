@@ -2,12 +2,12 @@ package io.github.restioson.koth.game;
 
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Formatting;
-import xyz.nucleoid.plasmid.widget.GlobalWidgets;
-import xyz.nucleoid.plasmid.widget.SidebarWidget;
+import xyz.nucleoid.plasmid.game.common.GlobalWidgets;
+import xyz.nucleoid.plasmid.game.common.widget.SidebarWidget;
 
 import java.util.List;
 
-public class KothScoreboard implements AutoCloseable {
+public class KothScoreboard {
     private final SidebarWidget sidebar;
     private final boolean winnerTakesAll;
     private final boolean deathMatch;
@@ -60,13 +60,8 @@ public class KothScoreboard implements AutoCloseable {
                     );
                 }
 
-                content.writeLine(line);
+                content.add(new LiteralText(line));
             }
         });
-    }
-
-
-    public void close() {
-        this.sidebar.close();
     }
 }
