@@ -14,8 +14,8 @@ public class Koth implements ModInitializer {
 
     public static final GameType<KothConfig> TYPE = GameType.register(
             new Identifier(ID, "koth"),
-            KothWaiting::open,
-            KothConfig.CODEC
+            KothConfig.CODEC,
+            KothWaiting::open
     );
 
     @Override

@@ -2,13 +2,14 @@ package io.github.restioson.koth.game.map;
 
 import io.github.restioson.koth.Koth;
 import io.github.restioson.koth.game.KothConfig;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.LiteralText;
 import net.minecraft.world.biome.BiomeKeys;
+import xyz.nucleoid.map_templates.BlockBounds;
+import xyz.nucleoid.map_templates.MapTemplate;
+import xyz.nucleoid.map_templates.MapTemplateMetadata;
+import xyz.nucleoid.map_templates.MapTemplateSerializer;
 import xyz.nucleoid.plasmid.game.GameOpenException;
-import xyz.nucleoid.plasmid.map.template.MapTemplate;
-import xyz.nucleoid.plasmid.map.template.MapTemplateMetadata;
-import xyz.nucleoid.plasmid.map.template.MapTemplateSerializer;
-import xyz.nucleoid.plasmid.util.BlockBounds;
 
 import java.io.IOException;
 
@@ -20,9 +21,9 @@ public class KothMapBuilder {
         this.config = config;
     }
 
-    public KothMap create() throws GameOpenException {
+    public KothMap create(MinecraftServer server) throws GameOpenException {
         try {
-            MapTemplate template = MapTemplateSerializer.INSTANCE.loadFromResource(this.config.id);
+            MapTemplate template = MapTemplateSerializer.loadFromResource(server, this.config.id());
             MapTemplateMetadata metadata = template.getMetadata();
 
             BlockBounds spawn = metadata.getFirstRegionBounds("spawn");
@@ -33,7 +34,7 @@ public class KothMapBuilder {
 
             BlockBounds throne = metadata.getFirstRegionBounds("throne");
 
-            KothMap map = new KothMap(template, spawn, throne, this.config.spawnAngle);
+            KothMap map = new KothMap(template, spawn, throne, this.config.spawnAngle());
             template.setBiome(BiomeKeys.PLAINS);
 
             return map;

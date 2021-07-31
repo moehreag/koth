@@ -5,6 +5,7 @@ import io.github.restioson.koth.game.map.KothMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.damage.DamageSource;
@@ -30,23 +31,38 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import xyz.nucleoid.map_templates.BlockBounds;
+import xyz.nucleoid.plasmid.game.GameCloseReason;
 import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.event.*;
-import xyz.nucleoid.plasmid.game.player.JoinResult;
+import xyz.nucleoid.plasmid.game.common.GlobalWidgets;
+import xyz.nucleoid.plasmid.game.event.GameActivityEvents;
+import xyz.nucleoid.plasmid.game.event.GamePlayerEvents;
+import xyz.nucleoid.plasmid.game.player.PlayerOffer;
+import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
 import xyz.nucleoid.plasmid.game.player.PlayerSet;
-import xyz.nucleoid.plasmid.game.rule.GameRule;
-import xyz.nucleoid.plasmid.game.rule.RuleResult;
-import xyz.nucleoid.plasmid.util.BlockBounds;
+import xyz.nucleoid.plasmid.game.rule.GameRuleType;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 import xyz.nucleoid.plasmid.util.PlayerRef;
-import xyz.nucleoid.plasmid.widget.GlobalWidgets;
+import xyz.nucleoid.stimuli.event.item.ItemUseEvent;
+import xyz.nucleoid.stimuli.event.player.PlayerDamageEvent;
+import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
+import xyz.nucleoid.stimuli.event.projectile.ArrowFireEvent;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class KothActive {
     private final KothConfig config;
 
+    private final ServerWorld world;
     public final GameSpace gameSpace;
     private final KothMap gameMap;
 
@@ -62,12 +78,13 @@ public class KothActive {
     private static final double LEAP_VELOCITY = 1.0;
     private boolean pvpEnabled = false;
 
-    private KothActive(GameSpace gameSpace, KothMap map, KothConfig config, Set<ServerPlayerEntity> participants, GlobalWidgets widgets) {
+    private KothActive(ServerWorld world, GameSpace gameSpace, KothMap map, KothConfig config, Set<ServerPlayerEntity> participants, GlobalWidgets widgets) {
+        this.world = world;
         this.gameSpace = gameSpace;
         this.config = config;
         this.gameMap = map;
         this.stageManager = new KothStageManager(config);
-        this.spawnLogic = new KothSpawnLogic(gameSpace, map);
+        this.spawnLogic = new KothSpawnLogic(world, map);
         this.participants = new Object2ObjectOpenHashMap<>();
 
         for (ServerPlayerEntity player : participants) {
@@ -75,54 +92,52 @@ public class KothActive {
         }
 
         String name;
-        if (config.deathmatch) {
+        if (config.deathmatch()) {
             name = "Deathmatch!";
-        } else if (config.winnerTakesAll) {
+        } else if (config.winnerTakesAll()) {
             name = "Winner Takes All";
-        } else if (config.knockoff) {
+        } else if (config.knockoff()) {
             name = "Knock everyone off arena!";
         } else {
             name = "Longest-reigning Ruler";
         }
 
-        this.scoreboard = new KothScoreboard(widgets, name, this.config.winnerTakesAll, this.config.deathmatch, this.config.knockoff);
+        this.scoreboard = new KothScoreboard(widgets, name, this.config.winnerTakesAll(), this.config.deathmatch(), this.config.knockoff());
 
-        if (this.config.deathmatch || this.config.knockoff) {
+        if (this.config.deathmatch() || this.config.knockoff()) {
             this.timerBar = Optional.empty();
         } else {
-            this.timerBar = Optional.of(new KothTimerBar());
+            this.timerBar = Optional.of(new KothTimerBar(widgets));
         }
     }
 
-    public static void open(GameSpace gameSpace, KothMap map, KothConfig config) {
-        gameSpace.openGame(game -> {
+    public static void open(ServerWorld world, GameSpace gameSpace, KothMap map, KothConfig config) {
+        gameSpace.setActivity(activity -> {
             Set<ServerPlayerEntity> participants = Sets.newHashSet(gameSpace.getPlayers());
-            GlobalWidgets widgets = new GlobalWidgets(game);
-            KothActive active = new KothActive(gameSpace, map, config, participants, widgets);
+            GlobalWidgets widgets = GlobalWidgets.addTo(activity);
+            KothActive active = new KothActive(world, gameSpace, map, config, participants, widgets);
 
-            game.setRule(GameRule.CRAFTING, RuleResult.DENY);
-            game.setRule(GameRule.PORTALS, RuleResult.DENY);
-            game.setRule(GameRule.PVP, RuleResult.ALLOW);
-            game.setRule(GameRule.HUNGER, RuleResult.DENY);
-            game.setRule(GameRule.FALL_DAMAGE, RuleResult.DENY);
-            game.setRule(GameRule.INTERACTION, RuleResult.ALLOW);
-            game.setRule(GameRule.BLOCK_DROPS, RuleResult.DENY);
-            game.setRule(GameRule.THROW_ITEMS, RuleResult.DENY);
-            game.setRule(GameRule.UNSTABLE_TNT, RuleResult.DENY);
+            activity.deny(GameRuleType.CRAFTING);
+            activity.deny(GameRuleType.PORTALS);
+            activity.allow(GameRuleType.PVP);
+            activity.deny(GameRuleType.HUNGER);
+            activity.deny(GameRuleType.FALL_DAMAGE);
+            activity.allow(GameRuleType.INTERACTION);
+            activity.deny(GameRuleType.BLOCK_DROPS);
+            activity.deny(GameRuleType.THROW_ITEMS);
+            activity.deny(GameRuleType.UNSTABLE_TNT);
 
-            game.on(GameOpenListener.EVENT, active::onOpen);
-            game.on(GameCloseListener.EVENT, active::onClose);
+            activity.listen(GameActivityEvents.ENABLE, active::onOpen);
 
-            game.on(OfferPlayerListener.EVENT, player -> JoinResult.ok());
-            game.on(PlayerAddListener.EVENT, active::addPlayer);
-            game.on(PlayerRemoveListener.EVENT, active::removePlayer);
+            activity.listen(GamePlayerEvents.OFFER, active::offerPlayer);
+            activity.listen(GamePlayerEvents.REMOVE, active::removePlayer);
 
-            game.on(GameTickListener.EVENT, active::tick);
-            game.on(UseItemListener.EVENT, active::onUseItem);
+            activity.listen(GameActivityEvents.TICK, active::tick);
+            activity.listen(ItemUseEvent.EVENT, active::onUseItem);
 
-            game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
-            game.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
-            game.on(PlayerFireArrowListener.EVENT, active::onPlayerFireArrow);
+            activity.listen(PlayerDeathEvent.EVENT, active::onPlayerDeath);
+            activity.listen(PlayerDamageEvent.EVENT, active::onPlayerDamage);
+            activity.listen(ArrowFireEvent.EVENT, active::onPlayerFireArrow);
         });
     }
 
@@ -130,16 +145,16 @@ public class KothActive {
         KothPlayer participant = this.participants.get(player);
 
         if (participant != null && source.getAttacker() != null && source.getAttacker() instanceof ServerPlayerEntity) {
-            long time = this.gameSpace.getWorld().getTime();
+            long time = this.world.getTime();
             PlayerRef attacker = PlayerRef.of((ServerPlayerEntity) source.getAttacker());
             participant.lastTimeWasAttacked = new AttackRecord(attacker, time);
         }
 
         if (!player.isSpectator() && source.isFire()) {
-            this.spawnDeadParticipant(player, source, this.gameSpace.getWorld().getTime());
+            this.spawnDeadParticipant(player, source, this.world.getTime());
         }
 
-        if (!this.pvpEnabled || (this.config.spawnInvuln && this.gameMap.noPvp.contains(player.getBlockPos()))) {
+        if (!this.pvpEnabled || (this.config.spawnInvuln() && this.gameMap.noPvp.contains(player.getBlockPos()))) {
             return ActionResult.FAIL;
         }
 
@@ -147,7 +162,7 @@ public class KothActive {
     }
 
     private void maybeGiveBow(ServerPlayerEntity player) {
-        if (this.config.hasBow) {
+        if (this.config.hasBow()) {
             ItemStack bow = ItemStackBuilder.of(Items.BOW)
                     .addEnchantment(Enchantments.PUNCH, 2)
                     .addEnchantment(Enchantments.INFINITY, 1)
@@ -155,38 +170,38 @@ public class KothActive {
                     .addLore(new LiteralText("Uzoba dutyulwa"))
                     .build();
 
-            player.inventory.insertStack(bow);
+            player.getInventory().insertStack(bow);
         }
     }
 
     private void onOpen() {
-        ServerWorld world = this.gameSpace.getWorld();
+        ServerWorld world = this.world;
         for (ServerPlayerEntity player : this.participants.keySet()) {
             this.spawnParticipant(player);
 
-            if (this.config.hasStick) {
+            if (this.config.hasStick()) {
                 ItemStack stick = ItemStackBuilder.of(Items.STICK)
                         .addEnchantment(Enchantments.KNOCKBACK, 2)
                         .addLore(new LiteralText("Ndiza kumbetha"))
                         .build();
-                player.inventory.insertStack(stick);
+                player.getInventory().insertStack(stick);
             }
 
-            if (this.config.hasBow) {
+            if (this.config.hasBow()) {
                 ItemStack arrow = ItemStackBuilder.of(Items.ARROW)
                         .addLore(new LiteralText("It seems to always come back to me..."))
                         .build();
 
-                player.inventory.insertStack(arrow);
+                player.getInventory().insertStack(arrow);
             }
 
-            if (this.config.hasFeather) {
+            if (this.config.hasFeather()) {
                 ItemStack feather = ItemStackBuilder.of(Items.FEATHER)
                         .addLore(new LiteralText("Bukelani, ndiyinkosi yesibhakabhaka!"))
                         .build();
 
-                if (this.config.hasBow) {
-                    player.inventory.insertStack(feather);
+                if (this.config.hasBow()) {
+                    player.getInventory().insertStack(feather);
                 } else {
                     player.equipStack(EquipmentSlot.OFFHAND, feather);
                 }
@@ -196,28 +211,16 @@ public class KothActive {
         this.scoreboard.renderTitle();
     }
 
-    private void onClose() {
-        this.timerBar.ifPresent(KothTimerBar::close);
-        if (this.scoreboard != null) {
-             this.scoreboard.close();
-        }
-    }
-
-    private void addPlayer(ServerPlayerEntity player) {
-        if (!this.participants.containsKey(player)) {
-            this.spawnSpectator(player);
-        }
-
-        this.timerBar.ifPresent(bar -> bar.addPlayer(player));
+    private PlayerOfferResult offerPlayer(PlayerOffer offer) {
+        return this.spawnLogic.acceptPlayer(offer, GameMode.SPECTATOR, this.stageManager);
     }
 
     private void removePlayer(ServerPlayerEntity player) {
         this.participants.remove(player);
-        this.timerBar.ifPresent(bar -> bar.removePlayer(player));
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-        this.spawnDeadParticipant(player, source, this.gameSpace.getWorld().getTime());
+        this.spawnDeadParticipant(player, source, this.world.getTime());
         return ActionResult.FAIL;
     }
 
@@ -251,7 +254,7 @@ public class KothActive {
             int ticks,
             PersistentProjectileEntity projectile
     ) {
-        if (this.gameMap.spawn.contains(user.getBlockPos()) && this.config.spawnInvuln) {
+        if (this.gameMap.spawn.contains(user.getBlockPos()) && this.config.spawnInvuln()) {
             return ActionResult.FAIL;
         } else {
             return ActionResult.PASS;
@@ -261,11 +264,11 @@ public class KothActive {
     private void spawnDeadParticipant(ServerPlayerEntity player, DamageSource damageSource, long time) {
         this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR, this.stageManager);
 
-        Inventories.remove(player.inventory, it -> it.getItem() == Items.BOW, 1, false);
+        Inventories.remove(player.getInventory(), it -> it.getItem() == Items.BOW, 1, false);
         KothPlayer participant = this.participants.get(player);
-        ServerWorld world = this.gameSpace.getWorld();
+        ServerWorld world = this.world;
 
-        if (this.config.deathmatch) {
+        if (this.config.deathmatch()) {
             PlayerSet players = this.gameSpace.getPlayers();
             MutableText eliminationMessage = new LiteralText(" has been eliminated by ");
 
@@ -282,16 +285,16 @@ public class KothActive {
             }
 
             players.sendMessage(new LiteralText("").append(player.getDisplayName()).append(eliminationMessage).formatted(Formatting.GOLD));
-            players.sendSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP);
-        } else if (this.config.knockoff && !this.gameFinished) {
+            players.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP);
+        } else if (this.config.knockoff() && !this.gameFinished) {
             KothPlayer attacker = this.participants.get(participant.attacker(time, world));
             if (attacker != null) {
                 attacker.score += 1;
                 attacker.player.addExperienceLevels(1);
                 attacker.player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
-                if (attacker.score >= this.config.firstTo) {
+                if (attacker.score >= this.config.firstTo()) {
                     this.gameFinished = true;
-                    this.stageManager.finishTime = this.gameSpace.getWorld().getTime();
+                    this.stageManager.finishTime = world.getTime();
 
                 }
             }
@@ -301,23 +304,19 @@ public class KothActive {
     }
 
     private void spawnParticipant(ServerPlayerEntity player) {
-        if (this.config.hasBow && !player.inventory.containsAny(new HashSet<>(Collections.singletonList(Items.BOW)))) {
+        if (this.config.hasBow() && !player.getInventory().containsAny(new HashSet<>(Collections.singletonList(Items.BOW)))) {
             this.maybeGiveBow(player);
         }
 
         this.spawnLogic.resetAndRespawn(player, GameMode.ADVENTURE, this.stageManager);
     }
 
-    private void spawnSpectator(ServerPlayerEntity player) {
-        this.spawnLogic.resetAndRespawn(player, GameMode.SPECTATOR, this.stageManager);
-    }
-
     private void tick() {
-        ServerWorld world = this.gameSpace.getWorld();
+        ServerWorld world = this.world;
         long time = world.getTime();
 
-        for (ArrowEntity arrow : world.getEntitiesByType(EntityType.ARROW, this.gameMap.bounds.toBox(), e -> e.inGround)) {
-            arrow.remove();
+        for (ArrowEntity arrow : world.getEntitiesByType(EntityType.ARROW, this.gameMap.bounds.asBox(), e -> e.inGround)) {
+            arrow.remove(Entity.RemovalReason.DISCARDED);
         }
 
         boolean overtime = false;
@@ -331,7 +330,7 @@ public class KothActive {
                 continue;
             }
 
-            boolean onThrone = this.gameMap.throne.toBox().intersects(player.getBoundingBox());
+            boolean onThrone = this.gameMap.throne.asBox().intersects(player.getBoundingBox());
 
             if (onThrone) {
                 playersOnThrone += 1;
@@ -343,20 +342,20 @@ public class KothActive {
         }
 
         overtime |= playersOnThrone != 1;
-        overtime |= this.config.deathmatch && alivePlayers > 1;
-        overtime |= this.config.knockoff;
+        overtime |= this.config.deathmatch() && alivePlayers > 1;
+        overtime |= this.config.knockoff();
 
         KothStageManager.TickResult result = this.stageManager.tick(time, gameSpace, overtime, this.gameFinished);
 
         switch (result) {
             case CONTINUE_TICK:
                 this.pvpEnabled = true;
-                this.timerBar.ifPresent(bar -> bar.update(this.stageManager.finishTime - time, this.config.timeLimitSecs * 20));
+                this.timerBar.ifPresent(bar -> bar.update(this.stageManager.finishTime - time, this.config.timeLimitSecs() * 20));
                 break;
             case OVERTIME:
                 if (this.overtimeState == OvertimeState.NOT_IN_OVERTIME) {
                     this.overtimeState = OvertimeState.IN_OVERTIME;
-                    this.gameSpace.getPlayers().sendTitle(new LiteralText("Overtime!"));
+                    this.gameSpace.getPlayers().showTitle(new LiteralText("Overtime!"), 20);
                     this.timerBar.ifPresent(KothTimerBar::setOvertime);
                 } else if (this.overtimeState == OvertimeState.JUST_ENTERED_OVERTIME) {
                     this.overtimeState = OvertimeState.IN_OVERTIME;
@@ -375,7 +374,7 @@ public class KothActive {
                 this.broadcastWin(this.getWinner());
                 return;
             case GAME_CLOSED:
-                this.gameSpace.close();
+                this.gameSpace.close(GameCloseReason.FINISHED);
                 return;
         }
 
@@ -385,7 +384,7 @@ public class KothActive {
             BlockBounds bounds = this.gameMap.bounds;
             BlockPos pos = player.getBlockPos();
             if (!bounds.contains(pos)) {
-                BlockPos max = this.gameMap.bounds.getMax();
+                BlockPos max = this.gameMap.bounds.max();
                 BlockPos playerBoundedY = new BlockPos(pos.getX(), max.getY(), pos.getZ());
 
                 // Allow the player to jump above the bounds but not go out of its x and z bounds
@@ -398,7 +397,7 @@ public class KothActive {
                 }
             }
 
-            if (this.config.deathmatch) {
+            if (this.config.deathmatch()) {
                 continue;
             }
 
@@ -410,19 +409,19 @@ public class KothActive {
                 continue;
             }
 
-            if (this.config.winnerTakesAll) {
+            if (this.config.winnerTakesAll()) {
                 List<KothPlayer> top = this.participants.values().stream()
                         .sorted(Comparator.comparingDouble(p -> -p.player.getY())) // Descending sort
                         .limit(1)
                         .collect(Collectors.toList());
                 this.scoreboard.render(top);
                 continue;
-            } else if (this.config.knockoff) {
+            } else if (this.config.knockoff()) {
                 this.scoreboard.render(this.buildLeaderboard());
                 continue;
             }
 
-            if (this.gameMap.throne.toBox().intersects(player.getBoundingBox()) && time % 20 == 0) {
+            if (this.gameMap.throne.asBox().intersects(player.getBoundingBox()) && time % 20 == 0) {
                 state.score += 1;
                 player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.0f, 1.0f);
                 player.addExperienceLevels(1);
@@ -445,7 +444,7 @@ public class KothActive {
     }
 
     private List<KothPlayer> buildLeaderboard() {
-        assert !this.config.winnerTakesAll;
+        assert !this.config.winnerTakesAll();
         return this.participants.values().stream()
                 .filter(player -> player.score != 0)
                 .sorted(Comparator.comparingInt(player -> -player.score)) // Descending sort
@@ -463,10 +462,10 @@ public class KothActive {
 
         String wonThe;
 
-        if (participant == null && this.config.firstTo == 1) {
+        if (participant == null && this.config.firstTo() == 1) {
             wonThe = "game";
             this.gameFinished = true;
-        } else if (participant != null && (participant.wins == this.config.firstTo || this.config.knockoff)) {
+        } else if (participant != null && (participant.wins == this.config.firstTo() || this.config.knockoff())) {
             wonThe = "game";
             this.gameFinished = true;
         } else {
@@ -475,11 +474,11 @@ public class KothActive {
 
         if (winner == null) {
             players.sendMessage(new LiteralText("The ").append(wonThe).append(" ended, but nobody won!").formatted(Formatting.GOLD));
-            players.sendSound(SoundEvents.ENTITY_VILLAGER_NO);
+            players.playSound(SoundEvents.ENTITY_VILLAGER_NO);
             return;
         }
 
-        if (this.config.deathmatch) {
+        if (this.config.deathmatch()) {
             List<KothPlayer> top = this.participants.values().stream()
                     .sorted(Comparator.comparingDouble(p -> -p.wins)) // Descending sort
                     .limit(5)
@@ -491,11 +490,11 @@ public class KothActive {
         Text message = winner.getDisplayName().shallowCopy().append(" has won the ").append(wonThe).append("!").formatted(Formatting.GOLD);
 
         players.sendMessage(message);
-        players.sendSound(SoundEvents.ENTITY_VILLAGER_YES);
+        players.playSound(SoundEvents.ENTITY_VILLAGER_YES);
     }
 
     private ServerPlayerEntity getWinner() {
-        if (this.config.deathmatch) {
+        if (this.config.deathmatch()) {
             for (ServerPlayerEntity player : this.participants.keySet()) {
                 if (!player.isSpectator()) {
                     return player;
@@ -508,7 +507,7 @@ public class KothActive {
 
         Map.Entry<ServerPlayerEntity, KothPlayer> winner = null;
         for (Map.Entry<ServerPlayerEntity, KothPlayer> entry : this.participants.entrySet()) {
-            if (this.config.winnerTakesAll) {
+            if (this.config.winnerTakesAll()) {
                 if (entry.getKey().isSpectator()) {
                     continue;
                 }
@@ -516,8 +515,8 @@ public class KothActive {
                 if (winner == null || winner.getKey().getBlockPos().getY() < entry.getKey().getBlockPos().getY() ) {
                     winner = entry;
                 }
-            } else if (this.config.knockoff) {
-                if (winner == null || entry.getValue().score >= this.config.firstTo ) {
+            } else if (this.config.knockoff()) {
+                if (winner == null || entry.getValue().score >= this.config.firstTo() ) {
                     winner = entry;
                 }
             } else {

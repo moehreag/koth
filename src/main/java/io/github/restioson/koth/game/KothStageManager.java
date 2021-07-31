@@ -33,7 +33,7 @@ public class KothStageManager {
 
     private void start(long time) {
         this.startTime = time - (time % 20) + (4 * 20) + 19;
-        this.finishTime = this.startTime + (config.timeLimitSecs * 20);
+        this.finishTime = this.startTime + (config.timeLimitSecs() * 20);
         this.closeTime = -1;
     }
 
@@ -41,14 +41,14 @@ public class KothStageManager {
         String line1 = "King of the Hill - get to the top of the hill and knock off others to win!";
         String line2;
 
-        if (config.deathmatch) {
+        if (config.deathmatch()) {
             line1 = "King of the Hill Deathmatch! - knock off other players and stay on the platform!";
             line2 = "The last player standing wins!";
-        } else if (config.knockoff) {
+        } else if (config.knockoff()) {
             line1 = "King of the Hill Knock Off! - knock off other players and stay on the platform!";
             line2 = "Score points by knocking everyone from the platform!\n" +
-                    "First player with " + config.firstTo + " points wins!";
-        } else if (!config.winnerTakesAll) {
+                    "First player with " + config.firstTo() + " points wins!";
+        } else if (!config.winnerTakesAll()) {
             line2 = "Score points by staying on top of the hill. Whoever reigns longest wins!\n" +
                     "If someone who is not the point-score leader is on the throne by the end, then the game will enter\n" +
                     " overtime until they become the ruler or are knocked off.";
@@ -60,11 +60,11 @@ public class KothStageManager {
         List<String> lines = new ArrayList<>();
         Collections.addAll(lines, line1, line2);
 
-        if (this.config.firstTo != 1 && !this.config.knockoff) {
-            lines.add("The game's winner will be whoever wins " + this.config.firstTo + " rounds first.");
+        if (this.config.firstTo() != 1 && !this.config.knockoff()) {
+            lines.add("The game's winner will be whoever wins " + this.config.firstTo() + " rounds first.");
         }
 
-        if (this.config.hasFeather) {
+        if (this.config.hasFeather()) {
             lines.add("Right-click with your feather to leap forwards.");
         }
 
@@ -98,13 +98,13 @@ public class KothStageManager {
             return TickResult.TICK_FINISHED;
         }
 
-        if (this.config.knockoff && gameFinished && this.closeTime == -1) {
+        if (this.config.knockoff() && gameFinished && this.closeTime == -1) {
             this.closeTime = time + (4 * 20);
             return TickResult.ROUND_FINISHED;
         }
 
         boolean noPlayers = space.getPlayerCount() == 0;
-        if (this.config.deathmatch) {
+        if (this.config.deathmatch()) {
             int remainingPlayers = 0;
             for (ServerPlayerEntity player : space.getPlayers()) {
                 if (!player.isSpectator()) {
@@ -122,7 +122,7 @@ public class KothStageManager {
             if (!overtime) {
                 this.closeTime = time + (2 * 20);
                 return TickResult.ROUND_FINISHED;
-            } else if (!this.config.deathmatch && !this.config.knockoff) {
+            } else if (!this.config.deathmatch() && !this.config.knockoff()) {
                 return TickResult.OVERTIME;
             } else if (noPlayers) { // Both eliminated at once
                 this.closeTime = time + (2 * 20);
@@ -156,7 +156,7 @@ public class KothStageManager {
                 Set<Flag> flags = ImmutableSet.of(Flag.X_ROT, Flag.Y_ROT);
 
                 // Teleport without changing the pitch and yaw
-                player.networkHandler.teleportRequest(destX, destY, destZ, player.yaw, player.pitch, flags);
+                player.networkHandler.requestTeleport(destX, destY, destZ, player.getYaw(), player.getPitch(), flags);
             }
         }
 
@@ -165,11 +165,11 @@ public class KothStageManager {
         PlayerSet players = space.getPlayers();
         if ((this.startTime - time) % 20 == 0) {
             if (sec > 0) {
-                players.sendTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD));
-                players.sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 1.0F);
+                players.showTitle(new LiteralText(Integer.toString(sec)).formatted(Formatting.BOLD), 20);
+                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 1.0F);
             } else {
-                players.sendTitle(new LiteralText("Go!").formatted(Formatting.BOLD));
-                players.sendSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 2.0F);
+                players.showTitle(new LiteralText("Go!").formatted(Formatting.BOLD), 20);
+                players.playSound(SoundEvents.BLOCK_NOTE_BLOCK_HARP, SoundCategory.PLAYERS, 1.0F, 2.0F);
             }
         }
 

@@ -10,25 +10,37 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
-import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.util.BlockBounds;
+import xyz.nucleoid.map_templates.BlockBounds;
+import xyz.nucleoid.plasmid.game.player.PlayerOffer;
+import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
 
 public class KothSpawnLogic {
-    private final GameSpace gameSpace;
+    private final ServerWorld world;
     private final KothMap map;
 
-    public KothSpawnLogic(GameSpace gameSpace, KothMap map) {
-        this.gameSpace = gameSpace;
+    public KothSpawnLogic(ServerWorld world, KothMap map) {
+        this.world = world;
         this.map = map;
     }
 
-    public void resetAndRespawn(ServerPlayerEntity player, GameMode gameMode, @Nullable KothStageManager stageManager) {
-        this.resetPlayer(player, gameMode);
-        this.spawnPlayer(player, stageManager);
+    public PlayerOfferResult acceptPlayer(PlayerOffer offer, GameMode gameMode, @Nullable KothStageManager stageManager) {
+        var player = offer.player();
+        return offer.accept(this.world, this.findSpawnFor(player))
+                .and(() -> {
+                    player.setYaw(this.map.spawnAngle);
+                    this.resetPlayer(player, gameMode, stageManager);
+                });
     }
 
-    private void resetPlayer(ServerPlayerEntity player, GameMode gameMode) {
-        player.setGameMode(gameMode);
+    public void resetAndRespawn(ServerPlayerEntity player, GameMode gameMode, @Nullable KothStageManager stageManager) {
+        Vec3d spawn = this.findSpawnFor(player);
+        player.teleport(this.world, spawn.x, spawn.y, spawn.z, this.map.spawnAngle, 0.0F);
+
+        this.resetPlayer(player, gameMode, stageManager);
+    }
+
+    public void resetPlayer(ServerPlayerEntity player, GameMode gameMode, @Nullable KothStageManager stageManager) {
+        player.changeGameMode(gameMode);
         player.setVelocity(Vec3d.ZERO);
         player.fallDistance = 0.0f;
         player.setFireTicks(0);
@@ -40,14 +52,20 @@ public class KothSpawnLogic {
                 true,
                 false
         ));
+
+        player.networkHandler.syncWithPlayerPosition();
+
+        if (stageManager != null) {
+            KothStageManager.FrozenPlayer state = stageManager.frozen.computeIfAbsent(player, p -> new KothStageManager.FrozenPlayer());
+            state.lastPos = player.getPos();
+        }
     }
 
-    private void spawnPlayer(ServerPlayerEntity player, @Nullable KothStageManager stageManager) {
-        ServerWorld world = this.gameSpace.getWorld();
-
+    public Vec3d findSpawnFor(ServerPlayerEntity player) {
+        var world = this.world;
         BlockBounds bounds = this.map.spawn;
-        BlockPos min = bounds.getMin();
-        BlockPos max = bounds.getMax();
+        BlockPos min = bounds.min();
+        BlockPos max = bounds.max();
 
         boolean validSpawn = false;
 
@@ -63,12 +81,6 @@ public class KothSpawnLogic {
                     (!world.getBlockState(new BlockPos(x, min.getY() - 2, z)).isAir());
         }
 
-        player.teleport(world, x, min.getY(), z, this.map.spawnAngle, 0.0F);
-        player.networkHandler.syncWithPlayerPosition();
-
-        if (stageManager != null) {
-            KothStageManager.FrozenPlayer state = stageManager.frozen.computeIfAbsent(player, p -> new KothStageManager.FrozenPlayer());
-            state.lastPos = player.getPos();
-        }
+        return new Vec3d(x, min.getY(), z);
     }
 }
