@@ -52,7 +52,7 @@ public class KothWaiting {
         return context.openWithWorld(worldConfig, (activity, world) -> {
             KothWaiting waiting = new KothWaiting(world, activity.getGameSpace(), map, context.config());
 
-            GameWaitingLobby.applyTo(activity, config.players());
+            GameWaitingLobby.addTo(activity, config.players());
 
             activity.listen(GameActivityEvents.REQUEST_START, waiting::requestStart);
             activity.listen(GameActivityEvents.TICK, waiting::tick);
