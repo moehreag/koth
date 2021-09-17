@@ -103,7 +103,7 @@ public class KothStageManager {
             return TickResult.ROUND_FINISHED;
         }
 
-        boolean noPlayers = space.getPlayerCount() == 0;
+        boolean noPlayers = space.getPlayers().size() == 0;
         if (this.config.deathmatch()) {
             int remainingPlayers = 0;
             for (ServerPlayerEntity player : space.getPlayers()) {
