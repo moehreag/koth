@@ -10,12 +10,10 @@
     "id": "koth:swamp",
     "spawn_angle": 180
   },
-  "deathmatch": true,
+    "time": 12300
   "players": {
     "min": 2,
     "max": 100
   },
-  "has_stick": true,
-  "first_to": 3,
-  "spawn_invulnerability": false
+  "has_stick": true
 }
