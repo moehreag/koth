@@ -22,5 +22,6 @@
   "game.koth.stack": "KOTH: Stack",
   "game.koth.stack_bow": "KOTH: Stack (Bow)",
   "game.koth.stack_leap": "KOTH: Stack (Leap)",
-  "game.koth.swamp":"KOTH: Swamp"
+  "game.koth.swamp":"KOTH: Swamp",
+  "game.koth.blommor": "KOTH: Blommor"
 }
