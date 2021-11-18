@@ -10,6 +10,7 @@
     "id": "koth:swamp",
     "spawn_angle": 180
   },
+  "time_limit_secs": 300,
   "players": {
     "min": 2,
     "max": 100
