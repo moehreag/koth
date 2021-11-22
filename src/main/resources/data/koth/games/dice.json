@@ -1,0 +1,20 @@
+{
+  "type": "koth:koth",
+  "icon": {
+    "id": "minecraft:stick", "Count": 1,
+    "Enchantments": [{"id": "minecraft:knockback", "lvl": 1}]
+  },
+  "short_name": "gameType.koth.koth.short",
+  "description": "gameType.koth.koth.desc",
+  "map": {
+    "id": "koth:dice",
+    "spawn_angle": 90,
+    "time": 12300
+  },
+  "players": {
+    "min": 2,
+    "max": 100
+  },
+  "time_limit_secs": 170,
+  "has_stick": true
+}
