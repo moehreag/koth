@@ -7,7 +7,7 @@
   "short_name": "gameType.koth.koth.short",
   "description": "gameType.koth.koth.desc",
   "map": {
-    "id": "koth:cube",
+    "id": "koth:dark_hills",
     "spawn_angle": 45,
     "time": 12300
   },
