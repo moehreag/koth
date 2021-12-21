@@ -7,7 +7,7 @@
   "short_name": "gameType.koth.koth.short",
   "description": "gameType.koth.koth.desc",
   "map": {
-    "id": "koth:birthday_cake",
+    "id": "koth:dark_hills",
     "spawn_angle": 0
   },
   "deathmatch": true,
